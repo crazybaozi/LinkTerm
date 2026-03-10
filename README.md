@@ -71,8 +71,8 @@
 ### 1. 部署服务端
 
 ```bash
-git clone https://github.com/yourname/linkterm.git
-cd linkterm
+git clone https://github.com/crazybaozi/LinkTerm.git
+cd LinkTerm
 
 # 编辑配置（只需修改 jwt_secret）
 vi deploy/config.yaml
@@ -90,10 +90,10 @@ auth:
 
 ```bash
 # 启动
-docker-compose up -d
+docker compose up -d
 
 # 查看日志
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### 2. 安装 Mac Agent

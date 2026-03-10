@@ -20,8 +20,7 @@ func main() {
 	} else {
 		cfg = DefaultConfig()
 		log.Println("no config file specified, using default dev config")
-		log.Printf("  Agent Token: %s", cfg.Auth.Tokens[0].Token)
-		log.Printf("  Access Password: %s", cfg.Auth.Tokens[0].AccessPassword)
+		log.Printf("  data_dir: %s", cfg.Auth.DataDir)
 	}
 
 	srv := NewServer(cfg)
