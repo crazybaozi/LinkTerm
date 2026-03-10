@@ -2,11 +2,22 @@
 
 # LinkTerm
 
-**手机浏览器远程操作 Mac 终端，打开即用，无需安装任何 App。**
+**手机上用 Claude Code / Kimi K2 — 浏览器远程操作 Mac 终端，无需安装任何 App。**
+
+LinkTerm 让你的手机变成 Mac 的远程终端。专为使用 [Claude Code](https://docs.anthropic.com/en/docs/claude-code)、[Kimi K2](https://kimi.ai) 等 AI 编程工具的开发者打造，无论在沙发上、咖啡馆里还是通勤路上，打开浏览器就能写代码。
 
 ```
 手机/iPad (浏览器)  ──HTTPS/WSS──>  服务端 (云服务器)  <──WSS──  Mac Agent
 ```
+
+## 为什么用 LinkTerm？
+
+Claude Code、Kimi K2 等 AI 编程助手运行在终端里，但你不可能一直坐在电脑前。LinkTerm 解决这个问题：
+
+- **手机当终端** — 打开浏览器，连上 Mac，运行 `claude` 或任何命令行工具
+- **手机零安装** — 不用下载 App，Safari / Chrome 直接用
+- **会话不丢失** — 锁屏、切应用，回来后一切都还在
+- **一行命令安装** — 几秒钟装好 Mac 端，随时随地开始编程
 
 ## 快速测试
 

@@ -2,11 +2,22 @@
 
 # LinkTerm
 
-**Control your Mac terminal from a phone browser. Zero app install, just open and use.**
+**Use Claude Code / Kimi K2 from your phone — access your Mac terminal via browser, no app install needed.**
+
+LinkTerm turns your phone into a remote terminal for your Mac. Built for developers who use AI coding tools like [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [Kimi K2](https://kimi.ai), so you can run them from anywhere — on the couch, in a café, or on the go — with just a browser.
 
 ```
 Phone/iPad (Browser)  ──HTTPS/WSS──>  Server (Cloud)  <──WSS──  Mac Agent
 ```
+
+## Why LinkTerm?
+
+AI coding assistants like Claude Code and Kimi K2 run in the terminal. But you're not always at your desk. LinkTerm bridges the gap:
+
+- **Phone as terminal** — Open a browser, connect to your Mac, run `claude` or any CLI tool
+- **Zero install on phone** — No app to download, works in Safari / Chrome
+- **Session persistence** — Lock your phone, come back later, everything is still there
+- **One-line setup** — Install the Mac agent in seconds, start coding remotely
 
 ## Quick Test
 
