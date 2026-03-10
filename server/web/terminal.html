@@ -18,7 +18,20 @@
         <button id="menuBtn" class="menu-btn">≡</button>
     </div>
 
-    <div id="terminalContainer"></div>
+    <div id="terminalContainer">
+        <div id="reconnectOverlay" class="reconnect-bar hidden">
+            <div class="reconnect-bar-content">
+                <div class="reconnect-bar-text">
+                    <span id="reconnectMsg" class="reconnect-msg">重连中...</span>
+                    <span id="reconnectReason" class="reconnect-reason"></span>
+                </div>
+                <div id="reconnectActions" class="reconnect-actions hidden">
+                    <button id="retryBtn" class="reconnect-btn">重新连接</button>
+                    <button id="reloginBtn" class="reconnect-btn btn-secondary">换 Token</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="toolbar" class="toolbar">
         <div class="toolbar-row">
@@ -61,17 +74,6 @@
             <div class="menu-divider"></div>
             <button id="logoutBtn" class="menu-item">退出登录</button>
             <button id="closeMenuBtn" class="menu-item">取消</button>
-        </div>
-    </div>
-
-    <div id="reconnectOverlay" class="reconnect-overlay hidden">
-        <div class="reconnect-box">
-            <div id="reconnectMsg" class="reconnect-msg">重连中...</div>
-            <div id="reconnectReason" class="reconnect-reason"></div>
-            <div id="reconnectActions" class="reconnect-actions hidden">
-                <button id="retryBtn" class="reconnect-btn">重新连接</button>
-                <button id="reloginBtn" class="reconnect-btn btn-secondary">重新输入 Token</button>
-            </div>
         </div>
     </div>
 

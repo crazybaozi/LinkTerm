@@ -168,6 +168,7 @@ html, body {
     flex: 1;
     overflow: hidden;
     min-height: 0;
+    position: relative;
 }
 
 /* ========== xterm.js rendering ========== */
@@ -354,55 +355,62 @@ html, body {
     color: var(--text-secondary);
 }
 
-/* ========== Reconnect overlay ========== */
+/* ========== Reconnect bar ========== */
 
-.reconnect-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(26, 27, 38, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 90;
+.reconnect-bar {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    z-index: 80;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    padding: 10px 14px;
 }
 
-.reconnect-box {
-    text-align: center;
-    padding: 24px;
-    max-width: 320px;
+.reconnect-bar-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.reconnect-bar-text {
+    flex: 1;
+    min-width: 0;
 }
 
 .reconnect-msg {
     color: var(--warning);
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 500;
 }
 
 .reconnect-reason {
     color: var(--text-secondary);
-    font-size: 13px;
-    margin-top: 8px;
-    line-height: 1.5;
+    font-size: 12px;
+    margin-left: 6px;
 }
 
 .reconnect-actions {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .reconnect-btn {
-    width: 100%;
-    padding: 12px;
+    padding: 6px 14px;
     border: none;
-    border-radius: var(--radius);
-    font-size: 15px;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     background: var(--accent);
     color: var(--bg-primary);
     touch-action: manipulation;
+    white-space: nowrap;
 }
 
 .reconnect-btn:active {
