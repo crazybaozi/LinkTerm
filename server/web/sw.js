@@ -1,4 +1,4 @@
-var CACHE_NAME = 'linkterm-v10';
+var CACHE_NAME = 'linkterm-v12';
 var SHELL_FILES = [
     '/',
     '/terminal.html',

@@ -58,6 +58,7 @@
     if (!fontPresets[currentFontPreset]) currentFontPreset = 'medium';
 
     var lastDisconnectReason = '';
+    var connectSeq = 0;
 
     initTerminal();
     connectToSession();
@@ -119,11 +120,13 @@
 
     /** connectToSession 先验证 JWT，再恢复或创建会话 */
     function connectToSession() {
+        var seq = ++connectSeq;
         setStatus('connecting', '正在验证...');
         fetch('/api/agents', {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
         })
         .then(function(resp) {
+            if (seq !== connectSeq) return;
             if (resp.status === 401) {
                 redirectToLogin();
                 return;
@@ -131,6 +134,7 @@
             return resp.json();
         })
         .then(function(agents) {
+            if (seq !== connectSeq) return;
             if (!agents || agents.length === 0) {
                 setStatus('disconnected', 'Mac 离线');
                 showReconnectBar('请确认 Agent 已启动并连接到服务端', true);
@@ -141,6 +145,7 @@
             if (sessionId) {
                 setStatus('connecting', '恢复已有会话...');
                 connectWebSocket(function onFail() {
+                    if (seq !== connectSeq) return;
                     sessionId = null;
                     localStorage.removeItem('linkterm_session_id');
                     findOrCreateSession(agentId);
@@ -150,6 +155,7 @@
             }
         })
         .catch(function(err) {
+            if (seq !== connectSeq) return;
             setStatus('disconnected', '连接失败');
             showReconnectBar('无法连接到服务端: ' + err.message, true);
         });
@@ -157,15 +163,18 @@
 
     /** findOrCreateSession 查找可复用的已有会话，没有则创建 */
     function findOrCreateSession(agId) {
+        var seq = connectSeq;
         setStatus('connecting', '正在查找会话...');
         return fetch('/api/sessions?agent_id=' + agId, {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
         })
         .then(function(resp) {
+            if (seq !== connectSeq) return;
             if (resp.status === 401) { redirectToLogin(); return; }
             return resp.json();
         })
         .then(function(sessions) {
+            if (seq !== connectSeq) return;
             if (!sessions) return;
             var reusable = null;
             for (var i = 0; i < sessions.length; i++) {
@@ -180,6 +189,7 @@
                 localStorage.setItem('linkterm_session_id', sessionId);
                 setStatus('connecting', '恢复已有会话...');
                 connectWebSocket(function onFail() {
+                    if (seq !== connectSeq) return;
                     sessionId = null;
                     localStorage.removeItem('linkterm_session_id');
                     createSession(agId);
@@ -270,11 +280,14 @@
         ws.binaryType = 'arraybuffer';
         var handshakeOk = false;
 
+        var stableResetDone = false;
+
         ws.onopen = function() {
             handshakeOk = true;
             setStatus('connected', '已连接');
             hideReconnectBar();
             reconnecting = false;
+            stableResetDone = false;
             if (skipInitialResize) {
                 skipInitialResize = false;
             } else {
@@ -285,7 +298,10 @@
         };
 
         ws.onmessage = function(e) {
-            reconnectAttempts = 0;
+            if (!stableResetDone) {
+                stableResetDone = true;
+                reconnectAttempts = 0;
+            }
             if (e.data instanceof ArrayBuffer) {
                 term.write(new Uint8Array(e.data));
                 if (bufferReplaying) {
@@ -397,13 +413,16 @@
         setStatus('connecting', attemptText);
         showReconnectBar(lastDisconnectReason, false);
 
+        var seq = connectSeq;
         reconnectTimer = setTimeout(function() {
+            if (seq !== connectSeq) return;
             reconnectAttempts++;
             reconnecting = false;
 
             fetch('/api/agents', {
                 headers: { 'Authorization': 'Bearer ' + jwtToken }
             }).then(function(resp) {
+                if (seq !== connectSeq) return;
                 if (resp.status === 401) {
                     redirectToLogin();
                     return;
@@ -414,12 +433,14 @@
                     return;
                 }
                 connectWebSocket(function() {
+                    if (seq !== connectSeq) return;
                     sessionId = null;
                     localStorage.removeItem('linkterm_session_id');
                     setStatus('disconnected', '会话已失效');
                     showReconnectBar('会话不存在，请重试或创建新终端', true);
                 });
             }).catch(function() {
+                if (seq !== connectSeq) return;
                 if (reconnectAttempts > maxReconnectAttempts) {
                     setStatus('disconnected', '网络异常');
                     showReconnectBar('无法连接到服务端，请检查网络', true);
@@ -445,8 +466,12 @@
                     hideReconnectBar();
                     connectToSession();
                 } else if (elapsed > 30000) {
-                    ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
+                    try {
+                        ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
+                    } catch (e) {}
+                    var seqBeforePing = connectSeq;
                     setTimeout(function() {
+                        if (seqBeforePing !== connectSeq) return;
                         if (!ws || ws.readyState !== WebSocket.OPEN) {
                             cancelReconnect();
                             reconnectAttempts = 0;
@@ -587,6 +612,8 @@
         });
         document.getElementById('newTermBtn').addEventListener('click', function() {
             menuOverlay.classList.add('hidden');
+            connectSeq++;
+            cancelReconnect();
             closeWebSocket();
             sessionId = null;
             localStorage.removeItem('linkterm_session_id');
@@ -619,6 +646,8 @@
         document.getElementById('closeTermBtn').addEventListener('click', function() {
             if (confirm('确认关闭终端？正在运行的进程将被终止。')) {
                 menuOverlay.classList.add('hidden');
+                connectSeq++;
+                cancelReconnect();
                 if (sessionId) {
                     fetch('/api/sessions?id=' + sessionId, {
                         method: 'DELETE',
@@ -690,6 +719,8 @@
                     return function() {
                         menuOverlay.classList.add('hidden');
                         if (sid !== sessionId) {
+                            connectSeq++;
+                            cancelReconnect();
                             closeWebSocket();
                             sessionId = sid;
                             localStorage.setItem('linkterm_session_id', sid);
