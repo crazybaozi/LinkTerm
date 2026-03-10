@@ -6,7 +6,6 @@ tls:
   # key: /etc/linkterm/certs/privkey.pem
 
 auth:
-  jwt_secret: "CHANGE-ME-to-a-random-string-at-least-32-chars"
   data_dir: "./data"
 
 session:

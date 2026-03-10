@@ -56,8 +56,8 @@
         term = new window.Terminal({
             cursorBlink: true,
             cursorStyle: 'bar',
-            fontSize: fontSize,
-            lineHeight: 1.15,
+            fontSize: fontPresets[currentFontPreset].size,
+            lineHeight: fontPresets[currentFontPreset].line,
             letterSpacing: 0,
             fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", Menlo, Monaco, "Courier New", monospace',
             fontWeight: '400',
@@ -471,8 +471,14 @@
 
     /* ========== Toolbar ========== */
 
-    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    var fontSize = parseInt(localStorage.getItem('linkterm_fontsize')) || (isMobile ? 15 : 14);
+    var fontPresets = {
+        small:  { size: 13, line: 1.25 },
+        medium: { size: 16, line: 1.2 },
+        large:  { size: 19, line: 1.2 }
+    };
+    var currentFontPreset = localStorage.getItem('linkterm_fontpreset') || 'medium';
+    if (!fontPresets[currentFontPreset]) currentFontPreset = 'medium';
+    var fontSize = fontPresets[currentFontPreset].size;
 
     function setupToolbar() {
         var buttons = document.querySelectorAll('.key-btn[data-key]');
@@ -499,29 +505,38 @@
             });
         }
 
-        var fontUpBtn = document.getElementById('fontUpBtn');
-        var fontDownBtn = document.getElementById('fontDownBtn');
-        if (fontUpBtn) {
-            fontUpBtn.addEventListener('click', function(e) {
+        var fontBtns = document.querySelectorAll('.font-btn');
+        for (var i = 0; i < fontBtns.length; i++) {
+            fontBtns[i].addEventListener('click', function(e) {
                 e.preventDefault();
-                changeFontSize(2);
+                var preset = this.getAttribute('data-fontsize');
+                applyFontPreset(preset);
             });
         }
-        if (fontDownBtn) {
-            fontDownBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                changeFontSize(-2);
-            });
-        }
+        updateFontBtnState();
     }
 
-    function changeFontSize(delta) {
-        fontSize = Math.max(10, Math.min(24, fontSize + delta));
-        localStorage.setItem('linkterm_fontsize', fontSize);
-        term.options.fontSize = fontSize;
+    function applyFontPreset(preset) {
+        if (!fontPresets[preset]) return;
+        currentFontPreset = preset;
+        localStorage.setItem('linkterm_fontpreset', preset);
+        term.options.fontSize = fontPresets[preset].size;
+        term.options.lineHeight = fontPresets[preset].line;
         fitAddon.fit();
         sendResize();
+        updateFontBtnState();
         term.focus();
+    }
+
+    function updateFontBtnState() {
+        var btns = document.querySelectorAll('.font-btn');
+        for (var i = 0; i < btns.length; i++) {
+            if (btns[i].getAttribute('data-fontsize') === currentFontPreset) {
+                btns[i].classList.add('active');
+            } else {
+                btns[i].classList.remove('active');
+            }
+        }
     }
 
     function handleToolbarKey(key) {

@@ -13,11 +13,6 @@
 ```bash
 git clone https://github.com/crazybaozi/LinkTerm.git
 cd LinkTerm
-
-# 修改 jwt_secret 为随机字符串
-vi deploy/config.yaml
-
-# 启动
 docker compose up -d
 ```
 
@@ -75,8 +70,6 @@ tail -f ~/.linkterm/agent.log
 
 ```yaml
 listen: ":8080"
-auth:
-  jwt_secret: "改为随机字符串"
 session:
   max_per_agent: 10
   buffer_size: 65536

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -38,7 +39,8 @@ type failureRecord struct {
 func NewAuthManager(cfg *Config) *AuthManager {
 	secret := cfg.Auth.JWTSecret
 	if secret == "" {
-		secret = "linkterm-dev-jwt-secret"
+		secret = generateRandomSecret()
+		log.Println("[auth] jwt_secret not configured, using auto-generated random secret")
 	}
 	am := &AuthManager{
 		jwtSecret: []byte(secret),
@@ -47,6 +49,14 @@ func NewAuthManager(cfg *Config) *AuthManager {
 	}
 	am.loadAgents()
 	return am
+}
+
+func generateRandomSecret() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "fallback-" + hex.EncodeToString(sha256.New().Sum(nil))
+	}
+	return hex.EncodeToString(b)
 }
 
 /** loadAgents 从 agents.json 加载已注册的 Agent */

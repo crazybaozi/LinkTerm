@@ -244,6 +244,12 @@ html, body {
     color: var(--bg-primary);
 }
 
+.key-btn.font-btn.active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: var(--accent);
+}
+
 /* ========== Menu overlay ========== */
 
 .menu-overlay {
