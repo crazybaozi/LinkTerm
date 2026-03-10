@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LinkTerm">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon.svg">
+    <title>LinkTerm</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">>_</div>
+            <h1>LinkTerm</h1>
+            <p class="subtitle">Remote Terminal Access</p>
+        </div>
+
+        <form id="loginForm" class="login-form">
+            <div class="input-group">
+                <input type="text" id="agentToken" placeholder="Agent Token" autocomplete="off" required>
+            </div>
+            <button type="submit" id="loginBtn">连接</button>
+            <div id="loginError" class="error-msg hidden"></div>
+        </form>
+    </div>
+
+    <div id="installBanner" class="install-banner hidden">
+        <span>添加到主屏幕，获得更好体验</span>
+        <button id="installBtn">安装</button>
+        <button id="dismissInstall" class="dismiss-btn">×</button>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+    var deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('installBanner').classList.remove('hidden');
+    });
+    document.getElementById('installBtn').addEventListener('click', function() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+        }
+        document.getElementById('installBanner').classList.add('hidden');
+    });
+    document.getElementById('dismissInstall').addEventListener('click', function() {
+        document.getElementById('installBanner').classList.add('hidden');
+    });
+    </script>
+</body>
+</html>

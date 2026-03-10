@@ -1,0 +1,13 @@
+{
+  "name": "LinkTerm",
+  "short_name": "LinkTerm",
+  "description": "Remote terminal for your Mac",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1b26",
+  "theme_color": "#1a1b26",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

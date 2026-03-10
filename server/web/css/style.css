@@ -1,0 +1,435 @@
+:root {
+    --bg-primary: #1a1b26;
+    --bg-secondary: #24283b;
+    --bg-surface: #2f334d;
+    --text-primary: #c0caf5;
+    --text-secondary: #565f89;
+    --accent: #7aa2f7;
+    --accent-hover: #89b4fa;
+    --danger: #f7768e;
+    --success: #9ece6a;
+    --warning: #e0af68;
+    --border: #3b4261;
+    --radius: 8px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* ========== Login Page ========== */
+
+.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 360px;
+    padding: 24px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.logo {
+    font-size: 48px;
+    font-weight: 700;
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    color: var(--accent);
+    margin-bottom: 8px;
+}
+
+.login-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.login-form .input-group {
+    margin-bottom: 16px;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.login-form input:focus {
+    border-color: var(--accent);
+}
+
+.login-form button {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: var(--bg-primary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.login-form button:hover {
+    background: var(--accent-hover);
+}
+
+.login-form button:active {
+    transform: scale(0.98);
+}
+
+.error-msg {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(247, 118, 142, 0.15);
+    border: 1px solid rgba(247, 118, 142, 0.3);
+    border-radius: var(--radius);
+    color: var(--danger);
+    font-size: 14px;
+    text-align: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ========== Terminal Page ========== */
+
+.terminal-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    height: 100dvh;
+}
+
+.status-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    flex-shrink: 0;
+    gap: 6px;
+    min-height: 36px;
+}
+
+.status-bar.status-connected #statusIcon { color: var(--success); }
+.status-bar.status-connecting #statusIcon { color: var(--warning); }
+.status-bar.status-disconnected #statusIcon { color: var(--danger); }
+
+#statusText {
+    flex: 1;
+}
+
+.menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+#terminalContainer {
+    flex: 1;
+    overflow: hidden;
+}
+
+/* ========== Toolbar (virtual keys) ========== */
+
+.toolbar {
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.key-btn {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.key-btn:active {
+    background: var(--accent);
+    color: var(--bg-primary);
+}
+
+.key-btn.mod-key.active {
+    background: var(--accent);
+    color: var(--bg-primary);
+}
+
+/* ========== Menu overlay ========== */
+
+.menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+}
+
+.menu-panel {
+    width: 100%;
+    max-width: 400px;
+    background: var(--bg-secondary);
+    border-radius: 12px 12px 0 0;
+    padding: 8px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
+.menu-item {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: none;
+    border: none;
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.menu-item:active {
+    background: var(--bg-surface);
+}
+
+.menu-item.danger {
+    color: var(--danger);
+}
+
+.menu-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
+
+.menu-section-title {
+    padding: 8px 16px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.session-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.session-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: background 0.15s;
+}
+
+.session-item:active,
+.session-item.active {
+    background: var(--bg-surface);
+}
+
+.session-item .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.session-item .status-dot.status-active { background: var(--success); }
+.session-item .status-dot.status-detached { background: var(--warning); }
+.session-item .status-dot.status-orphan { background: var(--danger); }
+
+.session-item .session-name {
+    flex: 1;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-item .session-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* ========== Reconnect overlay ========== */
+
+.reconnect-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 27, 38, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 90;
+}
+
+.reconnect-msg {
+    color: var(--warning);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* ========== Theme buttons ========== */
+
+.theme-row {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+}
+
+.theme-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.theme-btn.active {
+    border-color: var(--accent);
+    background: rgba(122, 162, 247, 0.15);
+    color: var(--accent);
+}
+
+/* ========== Tool buttons ========== */
+
+.key-btn.tool-btn {
+    background: var(--bg-secondary);
+    color: var(--accent);
+    border-color: var(--accent);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+}
+
+/* ========== Responsive ========== */
+
+@media (max-width: 480px) {
+    .key-btn {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+    .status-bar {
+        padding: 4px 12px;
+        min-height: 28px;
+        font-size: 12px;
+    }
+    .toolbar {
+        padding: 4px 8px;
+    }
+    .key-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}
+
+/* ========== Install Banner ========== */
+
+.install-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    font-size: 14px;
+    z-index: 200;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.install-banner span {
+    flex: 1;
+    color: var(--text-primary);
+}
+
+.install-banner button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+#installBtn {
+    background: var(--accent);
+    color: var(--bg-primary);
+    font-weight: 600;
+}
+
+.dismiss-btn {
+    background: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    padding: 4px 8px !important;
+}
+
+/* xterm.js customization */
+.xterm {
+    padding: 4px;
+}

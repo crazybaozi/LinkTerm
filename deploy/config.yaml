@@ -1,0 +1,19 @@
+listen: ":8080"
+region: "default"
+
+tls:
+  # cert: /etc/linkterm/certs/fullchain.pem
+  # key: /etc/linkterm/certs/privkey.pem
+
+auth:
+  jwt_secret: "CHANGE-ME-to-a-random-string-at-least-32-chars"
+  data_dir: "./data"
+
+session:
+  max_per_agent: 10
+  buffer_size: 65536
+  orphan_cleanup_days: 7
+
+heartbeat:
+  interval: 15s
+  timeout: 45s

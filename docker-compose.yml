@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  linkterm:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: linkterm-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./deploy/config.yaml:/etc/linkterm/config.yaml:ro
+      - ./deploy/certs:/etc/linkterm/certs:ro
+    environment:
+      - TZ=Asia/Shanghai

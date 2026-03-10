@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LinkTerm">
+    <link rel="manifest" href="/manifest.json">
+    <title>LinkTerm</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="terminal-page">
+    <div id="statusBar" class="status-bar status-connecting">
+        <span id="statusIcon">●</span>
+        <span id="statusText">连接中...</span>
+        <button id="menuBtn" class="menu-btn">≡</button>
+    </div>
+
+    <div id="terminalContainer"></div>
+
+    <div id="toolbar" class="toolbar">
+        <button data-key="Tab" class="key-btn">Tab</button>
+        <button data-key="Ctrl" class="key-btn mod-key">Ctrl</button>
+        <button data-key="Escape" class="key-btn">Esc</button>
+        <button data-key="ArrowUp" class="key-btn">↑</button>
+        <button data-key="ArrowDown" class="key-btn">↓</button>
+        <button data-key="ArrowLeft" class="key-btn">←</button>
+        <button data-key="ArrowRight" class="key-btn">→</button>
+        <button data-key="|" class="key-btn">|</button>
+        <button data-key="~" class="key-btn">~</button>
+        <button data-key="-" class="key-btn">-</button>
+        <button data-key="/" class="key-btn">/</button>
+        <button data-key="$" class="key-btn">$</button>
+        <button id="pasteBtn" class="key-btn tool-btn">粘贴</button>
+        <button id="fontDownBtn" class="key-btn tool-btn">A-</button>
+        <button id="fontUpBtn" class="key-btn tool-btn">A+</button>
+    </div>
+
+    <div id="menuOverlay" class="menu-overlay hidden">
+        <div class="menu-panel">
+            <div class="menu-section-title">会话列表</div>
+            <div id="sessionList" class="session-list"></div>
+            <div class="menu-divider"></div>
+            <button id="newTermBtn" class="menu-item">新建终端</button>
+            <button id="closeTermBtn" class="menu-item danger">关闭终端</button>
+            <div class="menu-divider"></div>
+            <div class="menu-section-title">主题</div>
+            <div class="theme-row">
+                <button id="themeDark" class="theme-btn active" data-theme="dark">暗色</button>
+                <button id="themeLight" class="theme-btn" data-theme="light">亮色</button>
+                <button id="themeDracula" class="theme-btn" data-theme="dracula">Dracula</button>
+            </div>
+            <div class="menu-divider"></div>
+            <button id="logoutBtn" class="menu-item">退出登录</button>
+            <button id="closeMenuBtn" class="menu-item">取消</button>
+        </div>
+    </div>
+
+    <div id="reconnectOverlay" class="reconnect-overlay hidden">
+        <div class="reconnect-msg">重连中...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0.11.0/lib/addon-web-links.min.js"></script>
+    <script src="/js/terminal.js"></script>
+    <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js');}</script>
+</body>
+</html>

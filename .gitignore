@@ -1,0 +1,23 @@
+# Binaries
+bin/
+*.exe
+*.out
+linkterm-agent
+linkterm-server
+
+# Runtime data
+data/
+agents.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Go
+vendor/
