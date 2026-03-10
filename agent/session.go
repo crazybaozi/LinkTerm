@@ -26,8 +26,9 @@ type Session struct {
 
 /** NewSession 创建新的 PTY 会话 */
 func NewSession(id string, cols, rows uint16, shell string, tunnel *Tunnel, bufferSize int) (*Session, error) {
-	cmd := exec.Command(shell)
+	cmd := exec.Command(shell, "-l")
 	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "TERM=xterm-256color")
 	if home, err := os.UserHomeDir(); err == nil {
 		cmd.Dir = home
 	}
