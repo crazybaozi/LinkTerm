@@ -129,18 +129,19 @@ html, body {
     flex-direction: column;
     height: 100%;
     height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0);
 }
 
 .status-bar {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding: 6px 12px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     font-size: 13px;
     flex-shrink: 0;
     gap: 6px;
-    min-height: 36px;
+    min-height: 32px;
 }
 
 .status-bar.status-connected #statusIcon { color: var(--success); }
@@ -149,6 +150,9 @@ html, body {
 
 #statusText {
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .menu-btn {
@@ -157,48 +161,85 @@ html, body {
     color: var(--text-secondary);
     font-size: 20px;
     cursor: pointer;
-    padding: 0 4px;
+    padding: 2px 6px;
 }
 
 #terminalContainer {
     flex: 1;
     overflow: hidden;
+    min-height: 0;
+}
+
+/* ========== xterm.js rendering ========== */
+
+.xterm {
+    padding: 2px 4px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 /* ========== Toolbar (virtual keys) ========== */
 
 .toolbar {
-    display: flex;
-    gap: 4px;
-    padding: 6px 8px;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border);
-    overflow-x: auto;
+    padding: 5px 6px;
+    padding-bottom: max(5px, env(safe-area-inset-bottom));
     flex-shrink: 0;
-    -webkit-overflow-scrolling: touch;
+}
+
+.toolbar-row {
+    display: flex;
+    gap: 4px;
+}
+
+.toolbar-row + .toolbar-row {
+    margin-top: 4px;
 }
 
 .key-btn {
-    flex-shrink: 0;
-    padding: 8px 12px;
+    flex: 1;
+    min-width: 0;
+    padding: 11px 0;
+    text-align: center;
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text-primary);
-    font-size: 13px;
+    font-size: 14px;
     font-family: "SF Mono", "Fira Code", monospace;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    transition: transform 0.08s, background 0.08s;
 }
 
 .key-btn:active {
     background: var(--accent);
     color: var(--bg-primary);
+    transform: scale(0.93);
 }
 
 .key-btn.mod-key.active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.4);
+}
+
+/* ========== Tool buttons (粘贴/A-/A+) ========== */
+
+.key-btn.tool-btn {
+    background: var(--bg-secondary);
+    color: var(--accent);
+    border-color: rgba(122, 162, 247, 0.3);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.key-btn.tool-btn:active {
     background: var(--accent);
     color: var(--bg-primary);
 }
@@ -221,7 +262,7 @@ html, body {
     background: var(--bg-secondary);
     border-radius: 12px 12px 0 0;
     padding: 8px;
-    padding-bottom: env(safe-area-inset-bottom, 8px);
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
 }
 
 .menu-item {
@@ -351,36 +392,35 @@ html, body {
     color: var(--accent);
 }
 
-/* ========== Tool buttons ========== */
-
-.key-btn.tool-btn {
-    background: var(--bg-secondary);
-    color: var(--accent);
-    border-color: var(--accent);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 12px;
-}
-
 /* ========== Responsive ========== */
 
-@media (max-width: 480px) {
+@media (max-width: 380px) {
     .key-btn {
-        padding: 10px 14px;
-        font-size: 14px;
+        padding: 10px 0;
+        font-size: 13px;
+    }
+    .key-btn.tool-btn {
+        font-size: 11px;
     }
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
     .status-bar {
-        padding: 4px 12px;
-        min-height: 28px;
-        font-size: 12px;
+        padding: 3px 12px;
+        min-height: 24px;
+        font-size: 11px;
     }
     .toolbar {
-        padding: 4px 8px;
+        padding: 3px 6px;
+    }
+    .toolbar-row {
+        gap: 3px;
+    }
+    .toolbar-row + .toolbar-row {
+        margin-top: 3px;
     }
     .key-btn {
-        padding: 6px 10px;
+        padding: 6px 0;
         font-size: 12px;
     }
 }
@@ -427,9 +467,4 @@ html, body {
     color: var(--text-secondary);
     font-size: 18px;
     padding: 4px 8px !important;
-}
-
-/* xterm.js customization */
-.xterm {
-    padding: 4px;
 }

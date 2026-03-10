@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="LinkTerm">
@@ -21,21 +21,26 @@
     <div id="terminalContainer"></div>
 
     <div id="toolbar" class="toolbar">
-        <button data-key="Tab" class="key-btn">Tab</button>
-        <button data-key="Ctrl" class="key-btn mod-key">Ctrl</button>
-        <button data-key="Escape" class="key-btn">Esc</button>
-        <button data-key="ArrowUp" class="key-btn">↑</button>
-        <button data-key="ArrowDown" class="key-btn">↓</button>
-        <button data-key="ArrowLeft" class="key-btn">←</button>
-        <button data-key="ArrowRight" class="key-btn">→</button>
-        <button data-key="|" class="key-btn">|</button>
-        <button data-key="~" class="key-btn">~</button>
-        <button data-key="-" class="key-btn">-</button>
-        <button data-key="/" class="key-btn">/</button>
-        <button data-key="$" class="key-btn">$</button>
-        <button id="pasteBtn" class="key-btn tool-btn">粘贴</button>
-        <button id="fontDownBtn" class="key-btn tool-btn">A-</button>
-        <button id="fontUpBtn" class="key-btn tool-btn">A+</button>
+        <div class="toolbar-row">
+            <button data-key="Escape" class="key-btn">Esc</button>
+            <button data-key="Tab" class="key-btn">Tab</button>
+            <button data-key="Ctrl" class="key-btn mod-key">Ctrl</button>
+            <button data-key="ArrowUp" class="key-btn">↑</button>
+            <button data-key="ArrowDown" class="key-btn">↓</button>
+            <button data-key="ArrowLeft" class="key-btn">←</button>
+            <button data-key="ArrowRight" class="key-btn">→</button>
+        </div>
+        <div class="toolbar-row">
+            <button data-key="|" class="key-btn">|</button>
+            <button data-key="~" class="key-btn">~</button>
+            <button data-key="/" class="key-btn">/</button>
+            <button data-key="-" class="key-btn">-</button>
+            <button data-key="_" class="key-btn">_</button>
+            <button data-key="$" class="key-btn">$</button>
+            <button id="pasteBtn" class="key-btn tool-btn">粘贴</button>
+            <button id="fontDownBtn" class="key-btn tool-btn">A-</button>
+            <button id="fontUpBtn" class="key-btn tool-btn">A+</button>
+        </div>
     </div>
 
     <div id="menuOverlay" class="menu-overlay hidden">

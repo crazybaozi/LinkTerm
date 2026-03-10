@@ -52,10 +52,17 @@
     function initTerminal() {
         term = new window.Terminal({
             cursorBlink: true,
+            cursorStyle: 'bar',
             fontSize: fontSize,
+            lineHeight: 1.15,
+            letterSpacing: 0,
             fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", Menlo, Monaco, "Courier New", monospace',
+            fontWeight: '400',
+            fontWeightBold: '600',
             theme: themes[currentTheme] || themes.dark,
-            allowProposedApi: true
+            allowProposedApi: true,
+            drawBoldTextInBrightColors: true,
+            minimumContrastRatio: 4.5
         });
 
         fitAddon = new window.FitAddon.FitAddon();
@@ -143,8 +150,12 @@
         return fetch('/api/sessions?agent_id=' + agId, {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
         })
-        .then(function(resp) { return resp.json(); })
+        .then(function(resp) {
+            if (resp.status === 401) { redirectToLogin(); return; }
+            return resp.json();
+        })
         .then(function(sessions) {
+            if (!sessions) return;
             var reusable = null;
             for (var i = 0; i < sessions.length; i++) {
                 var st = sessions[i].status;
@@ -178,8 +189,12 @@
                 rows: term.rows
             })
         })
-        .then(function(resp) { return resp.json(); })
+        .then(function(resp) {
+            if (resp.status === 401) { redirectToLogin(); return; }
+            return resp.json();
+        })
         .then(function(data) {
+            if (!data) return;
             sessionId = data.session_id;
             localStorage.setItem('linkterm_session_id', sessionId);
             connectWebSocket();
@@ -187,6 +202,12 @@
         .catch(function(err) {
             setStatus('disconnected', '创建终端失败: ' + err.message);
         });
+    }
+
+    function redirectToLogin() {
+        localStorage.removeItem('linkterm_token');
+        localStorage.removeItem('linkterm_session_id');
+        window.location.href = '/';
     }
 
     function connectWebSocket(onFail) {
@@ -200,8 +221,10 @@
 
         ws = new WebSocket(url);
         ws.binaryType = 'arraybuffer';
+        var handshakeOk = false;
 
         ws.onopen = function() {
+            handshakeOk = true;
             setStatus('connected', '已连接');
             reconnectOverlay.classList.add('hidden');
             reconnecting = false;
@@ -222,7 +245,7 @@
 
         ws.onclose = function(e) {
             stopPing();
-            if (e.code === 4404 && onFail) {
+            if ((!handshakeOk || e.code === 4404) && onFail) {
                 onFail();
                 return;
             }
@@ -312,8 +335,18 @@
         reconnectTimer = setTimeout(function() {
             reconnectAttempts++;
             if (reconnectAttempts > maxReconnectAttempts) {
-                setStatus('disconnected', '重连失败，请刷新页面');
                 reconnecting = false;
+                fetch('/api/agents', {
+                    headers: { 'Authorization': 'Bearer ' + jwtToken }
+                }).then(function(resp) {
+                    if (resp.status === 401) {
+                        redirectToLogin();
+                    } else {
+                        setStatus('disconnected', '重连失败，请刷新页面');
+                    }
+                }).catch(function() {
+                    setStatus('disconnected', '网络异常，请检查网络后刷新');
+                });
                 return;
             }
             reconnecting = false;
@@ -371,7 +404,8 @@
 
     /* ========== Toolbar ========== */
 
-    var fontSize = parseInt(localStorage.getItem('linkterm_fontsize')) || 14;
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    var fontSize = parseInt(localStorage.getItem('linkterm_fontsize')) || (isMobile ? 15 : 14);
 
     function setupToolbar() {
         var buttons = document.querySelectorAll('.key-btn[data-key]');
@@ -538,10 +572,14 @@
         fetch('/api/sessions', {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
         })
-        .then(function(resp) { return resp.json(); })
+        .then(function(resp) {
+            if (resp.status === 401) { redirectToLogin(); return; }
+            return resp.json();
+        })
         .then(function(sessions) {
+            if (!sessions) return;
             listEl.innerHTML = '';
-            if (!sessions || sessions.length === 0) {
+            if (sessions.length === 0) {
                 listEl.innerHTML = '<div style="padding:8px 16px;color:#565f89;">无活跃会话</div>';
                 return;
             }
