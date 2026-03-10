@@ -322,7 +322,6 @@
                 if (bufferReplaying) {
                     bufferReplaying = false;
                     setTimeout(function() {
-                        term.write('\x1b[2J\x1b[H');
                         sendResize();
                         setStatus('connected', '已连接');
                     }, 50);
@@ -768,7 +767,7 @@
                             closeWebSocket();
                             sessionId = sid;
                             localStorage.setItem('linkterm_session_id', sid);
-                            term.clear();
+                            term.reset();
                             connectWebSocket(function() {
                                 sessionId = null;
                                 localStorage.removeItem('linkterm_session_id');
