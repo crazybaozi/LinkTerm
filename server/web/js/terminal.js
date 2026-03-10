@@ -304,7 +304,7 @@
 
         ws.onclose = function(e) {
             stopPing();
-            if ((!handshakeOk || e.code === 4404) && onFail) {
+            if (!handshakeOk && onFail) {
                 onFail();
                 return;
             }
@@ -719,8 +719,7 @@
             1006: '连接异常断开（网络中断或服务端无响应）',
             1011: '服务端内部错误',
             1012: '服务端重启',
-            1013: '服务端过载',
-            4404: '会话不存在'
+            1013: '服务端过载'
         };
         return reasons[code] || '连接关闭 (code: ' + code + ')';
     }

@@ -29,13 +29,7 @@ func (s *Server) handleTerminalWS(w http.ResponseWriter, r *http.Request) {
 
 	session := s.sessions.Get(sessionID)
 	if session == nil {
-		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-			OriginPatterns: []string{"*"},
-		})
-		if err != nil {
-			return
-		}
-		conn.Close(4404, "session not found")
+		http.Error(w, "session not found", http.StatusNotFound)
 		return
 	}
 
