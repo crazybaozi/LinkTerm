@@ -64,7 +64,14 @@
     </div>
 
     <div id="reconnectOverlay" class="reconnect-overlay hidden">
-        <div class="reconnect-msg">重连中...</div>
+        <div class="reconnect-box">
+            <div id="reconnectMsg" class="reconnect-msg">重连中...</div>
+            <div id="reconnectReason" class="reconnect-reason"></div>
+            <div id="reconnectActions" class="reconnect-actions hidden">
+                <button id="retryBtn" class="reconnect-btn">重新连接</button>
+                <button id="reloginBtn" class="reconnect-btn btn-secondary">重新输入 Token</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>

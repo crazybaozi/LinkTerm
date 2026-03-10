@@ -353,17 +353,60 @@ html, body {
 .reconnect-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(26, 27, 38, 0.85);
+    background: rgba(26, 27, 38, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 90;
 }
 
+.reconnect-box {
+    text-align: center;
+    padding: 24px;
+    max-width: 320px;
+}
+
 .reconnect-msg {
     color: var(--warning);
     font-size: 16px;
     font-weight: 500;
+}
+
+.reconnect-reason {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-top: 8px;
+    line-height: 1.5;
+}
+
+.reconnect-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.reconnect-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    background: var(--accent);
+    color: var(--bg-primary);
+    touch-action: manipulation;
+}
+
+.reconnect-btn:active {
+    opacity: 0.85;
+}
+
+.reconnect-btn.btn-secondary {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
 }
 
 /* ========== Theme buttons ========== */

@@ -22,6 +22,9 @@
     var statusIcon = document.getElementById('statusIcon');
     var statusText = document.getElementById('statusText');
     var reconnectOverlay = document.getElementById('reconnectOverlay');
+    var reconnectMsg = document.getElementById('reconnectMsg');
+    var reconnectReason = document.getElementById('reconnectReason');
+    var reconnectActions = document.getElementById('reconnectActions');
     var menuOverlay = document.getElementById('menuOverlay');
 
     var themes = {
@@ -101,6 +104,7 @@
         setupToolbar();
         setupMenu();
         setupVisibility();
+        setupReconnectActions();
     }
 
     /** connectToSession 先验证 JWT，再恢复或创建会话 */
@@ -118,7 +122,12 @@
         })
         .then(function(agents) {
             if (!agents || agents.length === 0) {
-                setStatus('disconnected', 'Mac 离线，请确认 Agent 已启动');
+                setStatus('disconnected', 'Mac 离线');
+                showReconnectOverlay(
+                    'Mac 离线',
+                    '未检测到在线的 Agent，请确认 Mac 端 Agent 已启动并连接到服务端',
+                    true
+                );
                 return;
             }
             agentId = agents[0].id;
@@ -135,7 +144,12 @@
             }
         })
         .catch(function(err) {
-            setStatus('disconnected', '连接失败: ' + err.message);
+            setStatus('disconnected', '连接失败');
+            showReconnectOverlay(
+                '连接失败',
+                '无法连接到服务端: ' + err.message,
+                true
+            );
         });
     }
 
@@ -209,6 +223,23 @@
         window.location.href = '/';
     }
 
+    /** showReconnectOverlay 显示重连遮罩，可选显示原因和操作按钮 */
+    function showReconnectOverlay(msg, reason, showActions) {
+        reconnectMsg.textContent = msg;
+        reconnectReason.textContent = reason || '';
+        if (showActions) {
+            reconnectActions.classList.remove('hidden');
+        } else {
+            reconnectActions.classList.add('hidden');
+        }
+        reconnectOverlay.classList.remove('hidden');
+    }
+
+    function hideReconnectOverlay() {
+        reconnectOverlay.classList.add('hidden');
+        reconnectActions.classList.add('hidden');
+    }
+
     function connectWebSocket(onFail) {
         if (ws) {
             ws.close();
@@ -225,7 +256,7 @@
         ws.onopen = function() {
             handshakeOk = true;
             setStatus('connected', '已连接');
-            reconnectOverlay.classList.add('hidden');
+            hideReconnectOverlay();
             reconnecting = false;
             reconnectAttempts = 0;
             sendResize();
@@ -249,6 +280,7 @@
                 return;
             }
             if (!reconnecting) {
+                lastDisconnectReason = formatCloseReason(e.code, e.reason);
                 setStatus('disconnected', '连接已断开');
                 scheduleReconnect();
             }
@@ -268,14 +300,25 @@
                 setStatus('disconnected', '终端已结束 (exit ' + msg.exit_code + ')');
                 sessionId = null;
                 localStorage.removeItem('linkterm_session_id');
+                showReconnectOverlay(
+                    '终端已结束',
+                    '进程退出码: ' + msg.exit_code,
+                    true
+                );
                 break;
             case 'pong':
                 break;
             case 'session_status':
                 if (msg.status === 'orphan') {
                     setStatus('disconnected', 'Mac 离线，等待重连...');
+                    showReconnectOverlay(
+                        'Mac 离线',
+                        'Agent 未连接到服务端，请确认 Mac 端 Agent 正在运行',
+                        true
+                    );
                 } else if (msg.status === 'active') {
                     setStatus('connected', '已恢复连接');
+                    hideReconnectOverlay();
                 }
                 break;
         }
@@ -321,6 +364,8 @@
 
     /* ========== Reconnect ========== */
 
+    var lastDisconnectReason = '';
+
     function scheduleReconnect() {
         if (reconnecting || !sessionId) return;
         reconnecting = true;
@@ -328,8 +373,9 @@
         var delays = [1000, 2000, 5000];
         var delay = delays[Math.min(reconnectAttempts, delays.length - 1)];
 
-        setStatus('connecting', '重连中 (' + (reconnectAttempts + 1) + '/' + maxReconnectAttempts + ')...');
-        reconnectOverlay.classList.remove('hidden');
+        var attemptText = '重连中 (' + (reconnectAttempts + 1) + '/' + maxReconnectAttempts + ')...';
+        setStatus('connecting', attemptText);
+        showReconnectOverlay(attemptText, lastDisconnectReason, false);
 
         reconnectTimer = setTimeout(function() {
             reconnectAttempts++;
@@ -343,8 +389,12 @@
                     return;
                 }
                 if (reconnectAttempts > maxReconnectAttempts) {
-                    setStatus('disconnected', '重连失败，请刷新页面');
-                    reconnectOverlay.classList.add('hidden');
+                    setStatus('disconnected', '重连失败');
+                    showReconnectOverlay(
+                        '连接失败',
+                        lastDisconnectReason || '多次重连均未成功，请检查网络或 Agent 状态',
+                        true
+                    );
                     return;
                 }
                 connectWebSocket(function() {
@@ -354,8 +404,12 @@
                 });
             }).catch(function() {
                 if (reconnectAttempts > maxReconnectAttempts) {
-                    setStatus('disconnected', '网络异常，请检查网络后刷新');
-                    reconnectOverlay.classList.add('hidden');
+                    setStatus('disconnected', '网络异常');
+                    showReconnectOverlay(
+                        '网络异常',
+                        '无法连接到服务端，请检查网络连接',
+                        true
+                    );
                 } else {
                     scheduleReconnect();
                 }
@@ -375,16 +429,8 @@
                     cancelReconnect();
                     reconnectAttempts = 0;
                     reconnecting = false;
-                    if (sessionId) {
-                        setStatus('connecting', '恢复连接...');
-                        connectWebSocket(function() {
-                            sessionId = null;
-                            localStorage.removeItem('linkterm_session_id');
-                            fetchAgentAndConnect();
-                        });
-                    } else {
-                        fetchAgentAndConnect();
-                    }
+                    hideReconnectOverlay();
+                    connectToSession();
                 } else if (elapsed > 30000) {
                     ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
                     setTimeout(function() {
@@ -392,7 +438,7 @@
                             cancelReconnect();
                             reconnectAttempts = 0;
                             reconnecting = false;
-                            connectWebSocket();
+                            connectToSession();
                         }
                     }, 3000);
                 }
@@ -405,6 +451,22 @@
             clearTimeout(reconnectTimer);
             reconnectTimer = null;
         }
+    }
+
+    function setupReconnectActions() {
+        document.getElementById('retryBtn').addEventListener('click', function() {
+            cancelReconnect();
+            reconnectAttempts = 0;
+            reconnecting = false;
+            hideReconnectOverlay();
+            sessionId = null;
+            localStorage.removeItem('linkterm_session_id');
+            if (ws) { ws.close(); ws = null; }
+            connectToSession();
+        });
+        document.getElementById('reloginBtn').addEventListener('click', function() {
+            redirectToLogin();
+        });
     }
 
     /* ========== Toolbar ========== */
@@ -518,7 +580,7 @@
             sessionId = null;
             localStorage.removeItem('linkterm_session_id');
             term.clear();
-            fetchAgentAndConnect();
+            connectToSession();
         });
         document.getElementById('closeTermBtn').addEventListener('click', function() {
             if (confirm('确认关闭终端？正在运行的进程将被终止。')) {
@@ -612,7 +674,7 @@
                             connectWebSocket(function() {
                                 sessionId = null;
                                 localStorage.removeItem('linkterm_session_id');
-                                fetchAgentAndConnect();
+                                connectToSession();
                             });
                         }
                     };
@@ -624,6 +686,20 @@
         .catch(function() {
             listEl.innerHTML = '<div style="padding:8px 16px;color:#f7768e;">加载失败</div>';
         });
+    }
+
+    function formatCloseReason(code, reason) {
+        if (reason) return reason;
+        var reasons = {
+            1000: '正常关闭',
+            1001: '页面离开',
+            1006: '连接异常断开（网络中断或服务端无响应）',
+            1011: '服务端内部错误',
+            1012: '服务端重启',
+            1013: '服务端过载',
+            4404: '会话不存在'
+        };
+        return reasons[code] || '连接关闭 (code: ' + code + ')';
     }
 
     function formatBytes(bytes) {
