@@ -27,11 +27,10 @@ type Session struct {
 /** NewSession 创建新的 PTY 会话 */
 func NewSession(id string, cols, rows uint16, shell string, tunnel *Tunnel, bufferSize int) (*Session, error) {
 	cmd := exec.Command(shell, "-l")
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "TERM=xterm-256color")
-	if home, err := os.UserHomeDir(); err == nil {
-		cmd.Dir = home
-	}
+
+	home, _ := os.UserHomeDir()
+	cmd.Dir = home
+	cmd.Env = buildShellEnv(shell, home)
 
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{
 		Cols: cols,
@@ -147,6 +146,38 @@ func (s *Session) DrainBuffer() string {
 		return ""
 	}
 	return base64.StdEncoding.EncodeToString(data)
+}
+
+/**
+ * buildShellEnv 构建干净的 shell 初始环境
+ * 不继承 Agent（LaunchAgent）的残缺环境，让 login shell 通过 profile 文件自行构建完整 PATH
+ */
+func buildShellEnv(shell, home string) []string {
+	user := os.Getenv("USER")
+	if user == "" {
+		user = os.Getenv("LOGNAME")
+	}
+
+	env := []string{
+		"HOME=" + home,
+		"USER=" + user,
+		"LOGNAME=" + user,
+		"SHELL=" + shell,
+		"TERM=xterm-256color",
+		"LANG=en_US.UTF-8",
+	}
+
+	if v := os.Getenv("SSH_AUTH_SOCK"); v != "" {
+		env = append(env, "SSH_AUTH_SOCK="+v)
+	}
+	if v := os.Getenv("TMPDIR"); v != "" {
+		env = append(env, "TMPDIR="+v)
+	}
+	if v := os.Getenv("XPC_FLAGS"); v != "" {
+		env = append(env, "XPC_FLAGS="+v)
+	}
+
+	return env
 }
 
 /** SessionManager 管理本地所有 PTY 会话 */
