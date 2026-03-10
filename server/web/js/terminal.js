@@ -122,12 +122,13 @@
     /** connectToSession 先验证 JWT，再恢复或创建会话 */
     function connectToSession() {
         var seq = ++connectSeq;
+        console.log('[flow] connectToSession: seq=' + seq + ', sessionId=' + sessionId);
         setStatus('connecting', '正在验证...');
         fetch('/api/agents', {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
         })
         .then(function(resp) {
-            if (seq !== connectSeq) return;
+            if (seq !== connectSeq) { console.log('[flow] connectToSession agents resp: STALE seq=' + seq + ' cur=' + connectSeq); return; }
             if (resp.status === 401) {
                 redirectToLogin();
                 return;
@@ -135,7 +136,7 @@
             return resp.json();
         })
         .then(function(agents) {
-            if (seq !== connectSeq) return;
+            if (seq !== connectSeq) { console.log('[flow] connectToSession agents: STALE'); return; }
             if (!agents || agents.length === 0) {
                 setStatus('disconnected', 'Mac 离线');
                 showReconnectBar('请确认 Agent 已启动并连接到服务端', true);
@@ -165,6 +166,7 @@
     /** findOrCreateSession 查找可复用的已有会话，没有则创建 */
     function findOrCreateSession(agId) {
         var seq = connectSeq;
+        console.log('[flow] findOrCreateSession: agId=' + agId + ', seq=' + seq);
         setStatus('connecting', '正在查找会话...');
         return fetch('/api/sessions?agent_id=' + agId, {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
@@ -205,6 +207,7 @@
 
     function createSession(agId) {
         var seq = connectSeq;
+        console.log('[flow] createSession: agentId=' + agId + ', seq=' + seq);
         setStatus('connecting', '正在创建...');
         fetch('/api/sessions', {
             method: 'POST',
@@ -224,8 +227,9 @@
             return resp.json();
         })
         .then(function(data) {
-            if (seq !== connectSeq) return;
-            if (!data) return;
+            if (seq !== connectSeq) { console.log('[flow] createSession result: STALE seq=' + seq + ' cur=' + connectSeq); return; }
+            if (!data) { console.log('[flow] createSession result: no data'); return; }
+            console.log('[flow] createSession OK: newSessionId=' + data.session_id);
             sessionId = data.session_id;
             localStorage.setItem('linkterm_session_id', sessionId);
             skipInitialResize = true;
@@ -233,6 +237,7 @@
         })
         .catch(function(err) {
             if (seq !== connectSeq) return;
+            console.log('[flow] createSession ERROR: ' + err.message);
             setStatus('disconnected', '创建终端失败: ' + err.message);
         });
     }
@@ -260,6 +265,7 @@
 
     function closeWebSocket() {
         if (ws) {
+            console.log('[ws] closeWebSocket: closing, readyState=' + ws.readyState);
             var old = ws;
             ws = null;
             old.onopen = null;
@@ -271,11 +277,14 @@
                     old.close();
                 }
             } catch (e) {}
+        } else {
+            console.log('[ws] closeWebSocket: no ws to close');
         }
         stopPing();
     }
 
     function connectWebSocket(onFail) {
+        console.log('[ws] connectWebSocket: sessionId=' + sessionId + ', seq=' + connectSeq);
         closeWebSocket();
 
         var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -288,6 +297,7 @@
         var stableResetDone = false;
 
         ws.onopen = function() {
+            console.log('[ws] onopen: sessionId=' + sessionId);
             handshakeOk = true;
             setStatus('connected', '已连接');
             hideReconnectBar();
@@ -319,24 +329,29 @@
                 }
             } else {
                 var msg = JSON.parse(e.data);
+                console.log('[ws] control msg: ' + msg.type);
                 handleControlMessage(msg);
             }
         };
 
         ws.onclose = function(e) {
+            console.log('[ws] onclose: code=' + e.code + ', reason=' + e.reason + ', handshakeOk=' + handshakeOk + ', reconnecting=' + reconnecting + ', sessionId=' + sessionId);
             stopPing();
             if (!handshakeOk && onFail) {
+                console.log('[ws] onclose: calling onFail');
                 onFail();
                 return;
             }
             if (!reconnecting && sessionId) {
                 lastDisconnectReason = formatCloseReason(e.code, e.reason);
                 setStatus('disconnected', '连接已断开');
+                console.log('[ws] onclose: calling scheduleReconnect');
                 scheduleReconnect();
             }
         };
 
         ws.onerror = function() {
+            console.log('[ws] onerror');
             stopPing();
         };
     }
@@ -408,6 +423,7 @@
     /* ========== Reconnect ========== */
 
     function scheduleReconnect() {
+        console.log('[reconnect] scheduleReconnect: reconnecting=' + reconnecting + ', sessionId=' + sessionId + ', attempts=' + reconnectAttempts);
         if (reconnecting || !sessionId) return;
         reconnecting = true;
 
@@ -463,22 +479,30 @@
             if (document.visibilityState === 'hidden') {
                 lastHiddenTime = Date.now();
             } else {
-                if (Date.now() - lastUserAction < 10000) return;
+                var sinceLast = Date.now() - lastUserAction;
+                if (sinceLast < 10000) {
+                    console.log('[visibility] BLOCKED: lastUserAction was ' + sinceLast + 'ms ago');
+                    return;
+                }
 
                 var elapsed = Date.now() - lastHiddenTime;
                 if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    console.log('[visibility] ws dead, calling connectToSession. ws=' + (ws ? 'exists(state=' + ws.readyState + ')' : 'null'));
                     cancelReconnect();
                     reconnectAttempts = 0;
                     reconnecting = false;
                     hideReconnectBar();
                     connectToSession();
                 } else if (elapsed > 30000) {
+                    console.log('[visibility] elapsed=' + elapsed + 'ms, sending ping');
                     try {
                         ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
                     } catch (e) {}
                     setTimeout(function() {
-                        if (Date.now() - lastUserAction < 10000) return;
+                        var sinceAction = Date.now() - lastUserAction;
+                        if (sinceAction < 10000) { console.log('[visibility] 3s timer BLOCKED: action ' + sinceAction + 'ms ago'); return; }
                         if (!ws || ws.readyState !== WebSocket.OPEN) {
+                            console.log('[visibility] 3s timer: ws dead, reconnecting');
                             cancelReconnect();
                             reconnectAttempts = 0;
                             reconnecting = false;
@@ -619,9 +643,11 @@
             menuOverlay.classList.add('hidden');
         });
         document.getElementById('newTermBtn').addEventListener('click', function() {
+            console.log('[action] newTermBtn clicked! old sessionId=' + sessionId + ', agentId=' + agentId + ', connectSeq=' + connectSeq);
             menuOverlay.classList.add('hidden');
             lastUserAction = Date.now();
             connectSeq++;
+            console.log('[action] newTermBtn: connectSeq now=' + connectSeq);
             cancelReconnect();
             closeWebSocket();
             sessionId = null;
