@@ -230,11 +230,20 @@
         reconnectActions.classList.add('hidden');
     }
 
-    function connectWebSocket(onFail) {
+    function closeWebSocket() {
         if (ws) {
+            ws.onopen = null;
+            ws.onmessage = null;
+            ws.onclose = null;
+            ws.onerror = null;
             ws.close();
             ws = null;
         }
+        stopPing();
+    }
+
+    function connectWebSocket(onFail) {
+        closeWebSocket();
 
         var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         var url = protocol + '//' + window.location.host + '/ws/terminal/' + sessionId + '?token=' + jwtToken;
@@ -444,7 +453,7 @@
             hideReconnectBar();
             sessionId = null;
             localStorage.removeItem('linkterm_session_id');
-            if (ws) { ws.close(); ws = null; }
+            closeWebSocket();
             connectToSession();
         });
         document.getElementById('reloginBtn').addEventListener('click', function() {
@@ -566,7 +575,7 @@
         });
         document.getElementById('newTermBtn').addEventListener('click', function() {
             menuOverlay.classList.add('hidden');
-            if (ws) { ws.close(); ws = null; }
+            closeWebSocket();
             sessionId = null;
             localStorage.removeItem('linkterm_session_id');
             term.clear();
@@ -604,7 +613,7 @@
                 sessionId = null;
                 localStorage.removeItem('linkterm_session_id');
                 setStatus('disconnected', '终端已关闭');
-                if (ws) ws.close();
+                closeWebSocket();
             }
         });
         var fontBtns = document.querySelectorAll('.font-btn');
@@ -666,7 +675,7 @@
                     return function() {
                         menuOverlay.classList.add('hidden');
                         if (sid !== sessionId) {
-                            if (ws) ws.close();
+                            closeWebSocket();
                             sessionId = sid;
                             localStorage.setItem('linkterm_session_id', sid);
                             term.clear();
