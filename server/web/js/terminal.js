@@ -21,8 +21,7 @@
     var statusBar = document.getElementById('statusBar');
     var statusIcon = document.getElementById('statusIcon');
     var statusText = document.getElementById('statusText');
-    var reconnectOverlay = document.getElementById('reconnectOverlay');
-    var reconnectMsg = document.getElementById('reconnectMsg');
+    var reconnectBar = document.getElementById('reconnectBar');
     var reconnectReason = document.getElementById('reconnectReason');
     var reconnectActions = document.getElementById('reconnectActions');
     var menuOverlay = document.getElementById('menuOverlay');
@@ -123,11 +122,7 @@
         .then(function(agents) {
             if (!agents || agents.length === 0) {
                 setStatus('disconnected', 'Mac 离线');
-                showReconnectOverlay(
-                    'Mac 离线',
-                    '未检测到在线的 Agent，请确认 Mac 端 Agent 已启动并连接到服务端',
-                    true
-                );
+                showReconnectBar('请确认 Agent 已启动并连接到服务端', true);
                 return;
             }
             agentId = agents[0].id;
@@ -145,11 +140,7 @@
         })
         .catch(function(err) {
             setStatus('disconnected', '连接失败');
-            showReconnectOverlay(
-                '连接失败',
-                '无法连接到服务端: ' + err.message,
-                true
-            );
+            showReconnectBar('无法连接到服务端: ' + err.message, true);
         });
     }
 
@@ -223,20 +214,18 @@
         window.location.href = '/';
     }
 
-    /** showReconnectOverlay 显示重连遮罩，可选显示原因和操作按钮 */
-    function showReconnectOverlay(msg, reason, showActions) {
-        reconnectMsg.textContent = msg;
+    function showReconnectBar(reason, showActions) {
         reconnectReason.textContent = reason || '';
         if (showActions) {
             reconnectActions.classList.remove('hidden');
         } else {
             reconnectActions.classList.add('hidden');
         }
-        reconnectOverlay.classList.remove('hidden');
+        reconnectBar.classList.remove('hidden');
     }
 
-    function hideReconnectOverlay() {
-        reconnectOverlay.classList.add('hidden');
+    function hideReconnectBar() {
+        reconnectBar.classList.add('hidden');
         reconnectActions.classList.add('hidden');
     }
 
@@ -256,7 +245,7 @@
         ws.onopen = function() {
             handshakeOk = true;
             setStatus('connected', '已连接');
-            hideReconnectOverlay();
+            hideReconnectBar();
             reconnecting = false;
             reconnectAttempts = 0;
             sendResize();
@@ -300,25 +289,17 @@
                 setStatus('disconnected', '终端已结束 (exit ' + msg.exit_code + ')');
                 sessionId = null;
                 localStorage.removeItem('linkterm_session_id');
-                showReconnectOverlay(
-                    '终端已结束',
-                    '进程退出码: ' + msg.exit_code,
-                    true
-                );
+                showReconnectBar('进程退出码: ' + msg.exit_code, true);
                 break;
             case 'pong':
                 break;
             case 'session_status':
                 if (msg.status === 'orphan') {
                     setStatus('disconnected', 'Mac 离线，等待重连...');
-                    showReconnectOverlay(
-                        'Mac 离线',
-                        'Agent 未连接到服务端，请确认 Mac 端 Agent 正在运行',
-                        true
-                    );
+                    showReconnectBar('Agent 未连接，请确认 Mac 端正在运行', true);
                 } else if (msg.status === 'active') {
                     setStatus('connected', '已恢复连接');
-                    hideReconnectOverlay();
+                    hideReconnectBar();
                 }
                 break;
         }
@@ -375,7 +356,7 @@
 
         var attemptText = '重连中 (' + (reconnectAttempts + 1) + '/' + maxReconnectAttempts + ')...';
         setStatus('connecting', attemptText);
-        showReconnectOverlay(attemptText, lastDisconnectReason, false);
+        showReconnectBar(lastDisconnectReason, false);
 
         reconnectTimer = setTimeout(function() {
             reconnectAttempts++;
@@ -390,11 +371,7 @@
                 }
                 if (reconnectAttempts > maxReconnectAttempts) {
                     setStatus('disconnected', '重连失败');
-                    showReconnectOverlay(
-                        '连接失败',
-                        lastDisconnectReason || '多次重连均未成功，请检查网络或 Agent 状态',
-                        true
-                    );
+                    showReconnectBar(lastDisconnectReason || '多次重连未成功', true);
                     return;
                 }
                 connectWebSocket(function() {
@@ -405,11 +382,7 @@
             }).catch(function() {
                 if (reconnectAttempts > maxReconnectAttempts) {
                     setStatus('disconnected', '网络异常');
-                    showReconnectOverlay(
-                        '网络异常',
-                        '无法连接到服务端，请检查网络连接',
-                        true
-                    );
+                    showReconnectBar('无法连接到服务端，请检查网络', true);
                 } else {
                     scheduleReconnect();
                 }
@@ -429,7 +402,7 @@
                     cancelReconnect();
                     reconnectAttempts = 0;
                     reconnecting = false;
-                    hideReconnectOverlay();
+                    hideReconnectBar();
                     connectToSession();
                 } else if (elapsed > 30000) {
                     ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
@@ -458,7 +431,7 @@
             cancelReconnect();
             reconnectAttempts = 0;
             reconnecting = false;
-            hideReconnectOverlay();
+            hideReconnectBar();
             sessionId = null;
             localStorage.removeItem('linkterm_session_id');
             if (ws) { ws.close(); ws = null; }

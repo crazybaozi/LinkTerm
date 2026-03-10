@@ -18,20 +18,15 @@
         <button id="menuBtn" class="menu-btn">≡</button>
     </div>
 
-    <div id="terminalContainer">
-        <div id="reconnectOverlay" class="reconnect-bar hidden">
-            <div class="reconnect-bar-content">
-                <div class="reconnect-bar-text">
-                    <span id="reconnectMsg" class="reconnect-msg">重连中...</span>
-                    <span id="reconnectReason" class="reconnect-reason"></span>
-                </div>
-                <div id="reconnectActions" class="reconnect-actions hidden">
-                    <button id="retryBtn" class="reconnect-btn">重新连接</button>
-                    <button id="reloginBtn" class="reconnect-btn btn-secondary">换 Token</button>
-                </div>
-            </div>
+    <div id="reconnectBar" class="reconnect-bar hidden">
+        <span id="reconnectReason" class="reconnect-reason"></span>
+        <div id="reconnectActions" class="reconnect-actions hidden">
+            <button id="retryBtn" class="reconnect-btn">重试</button>
+            <button id="reloginBtn" class="reconnect-btn btn-secondary">换 Token</button>
         </div>
     </div>
+
+    <div id="terminalContainer"></div>
 
     <div id="toolbar" class="toolbar">
         <div class="toolbar-row">
