@@ -3,10 +3,17 @@
 # LinkTerm Agent 一键安装脚本
 #
 # 用法:
-#   curl -sSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash
-#   bash scripts/install.sh
-#   bash scripts/install.sh --server wss://term.example.com
-#   bash scripts/install.sh --uninstall
+#   远程安装（无需 clone 项目）:
+#     curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash
+#     curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash -s -- --server wss://your-server.com
+#
+#   本地安装（已 clone 项目）:
+#     bash scripts/install.sh
+#     bash scripts/install.sh --server wss://term.example.com
+#
+#   管理:
+#     bash scripts/install.sh --status
+#     bash scripts/install.sh --uninstall
 #
 set -e
 
@@ -151,7 +158,7 @@ detect_system() {
 install_binary() {
     mkdir -p "$INSTALL_DIR"
 
-    # 优先级: --local 参数 > 项目 bin 目录 > GitHub Releases > 本地编译
+    # 优先级: --local 参数 > 项目 bin 目录 > GitHub Releases > 本地编译 > clone 编译
     if [ -n "$LOCAL_BIN" ]; then
         install_from_local "$LOCAL_BIN"
         return
@@ -172,17 +179,30 @@ install_binary() {
         return
     fi
 
-    # 尝试本地编译
+    # 尝试本地编译（适用于已 clone 项目的场景）
     if build_locally; then
+        return
+    fi
+
+    # 临时 clone 仓库并编译（适用于 curl|bash 远程安装场景）
+    if clone_and_build; then
         return
     fi
 
     fail "无法获取 ${BIN_NAME} 二进制文件"
     echo ""
-    echo -e "  请手动编译后重试:"
-    echo -e "    ${DIM}cd agent && go build -o ${BIN_PATH} . ${NC}"
-    echo -e "  或指定已有的二进制文件:"
-    echo -e "    ${DIM}bash install.sh --local /path/to/${BIN_NAME}${NC}"
+    echo -e "  可能的原因："
+    echo -e "    1. GitHub Releases 尚未发布二进制文件"
+    echo -e "    2. 未安装 Go 或 Git，无法自动编译"
+    echo ""
+    echo -e "  解决方案："
+    echo -e "    ${DIM}# 方式一：安装 Go 后重新运行安装脚本（脚本会自动 clone 并编译）${NC}"
+    echo -e "    ${DIM}brew install go && curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/install.sh | bash${NC}"
+    echo ""
+    echo -e "    ${DIM}# 方式二：手动 clone 编译后指定二进制文件${NC}"
+    echo -e "    ${DIM}git clone https://github.com/${REPO}.git /tmp/LinkTerm${NC}"
+    echo -e "    ${DIM}cd /tmp/LinkTerm/agent && go build -o ${BIN_PATH} .${NC}"
+    echo -e "    ${DIM}curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/install.sh | bash -s -- --local ${BIN_PATH}${NC}"
     exit 1
 }
 
@@ -242,6 +262,44 @@ build_locally() {
     }
     chmod +x "$BIN_PATH"
     ok "已编译并安装到 ${DIM}${BIN_PATH}${NC}"
+    return 0
+}
+
+clone_and_build() {
+    if ! command -v go &>/dev/null; then
+        warn "未安装 Go，跳过 clone 编译"
+        return 1
+    fi
+
+    if ! command -v git &>/dev/null; then
+        warn "未安装 Git，跳过 clone 编译"
+        return 1
+    fi
+
+    local tmp_dir
+    tmp_dir=$(mktemp -d)
+    trap "rm -rf '$tmp_dir'" RETURN
+
+    info "从 GitHub clone 源码并编译..."
+    if ! git clone --depth 1 "https://github.com/${REPO}.git" "$tmp_dir" 2>/dev/null; then
+        warn "Git clone 失败"
+        return 1
+    fi
+
+    local agent_dir="${tmp_dir}/agent"
+    if [ ! -f "${agent_dir}/main.go" ]; then
+        warn "clone 的仓库中未找到 agent 源码"
+        return 1
+    fi
+
+    info "编译中..."
+    (cd "$agent_dir" && GOOS=darwin GOARCH="$ARCH" go build -o "$BIN_PATH" .) || {
+        warn "编译失败"
+        return 1
+    }
+
+    chmod +x "$BIN_PATH"
+    ok "已 clone 编译并安装到 ${DIM}${BIN_PATH}${NC}"
     return 0
 }
 
@@ -410,7 +468,7 @@ print_result() {
     echo -e "${GREEN}║${NC}  启动      ${DIM}${BIN_PATH} -config ${CONFIG_PATH}${NC}"
     fi
 
-    echo -e "${GREEN}║${NC}  卸载      ${DIM}bash $0 --uninstall${NC}"
+    echo -e "${GREEN}║${NC}  卸载      ${DIM}curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/install.sh | bash -s -- --uninstall${NC}"
     echo -e "${GREEN}║${NC}                                              ${GREEN}║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
     echo ""
