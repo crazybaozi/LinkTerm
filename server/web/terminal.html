@@ -29,27 +29,20 @@
     <div id="terminalContainer"></div>
 
     <div id="toolbar" class="toolbar">
-        <div class="toolbar-row">
-            <button data-key="Escape" class="key-btn">Esc</button>
-            <button data-key="Tab" class="key-btn">Tab</button>
-            <button data-key="Ctrl" class="key-btn mod-key">Ctrl</button>
-            <button data-key="ArrowUp" class="key-btn">↑</button>
-            <button data-key="ArrowDown" class="key-btn">↓</button>
-            <button data-key="ArrowLeft" class="key-btn">←</button>
-            <button data-key="ArrowRight" class="key-btn">→</button>
-        </div>
-        <div class="toolbar-row">
-            <button data-key="|" class="key-btn">|</button>
-            <button data-key="~" class="key-btn">~</button>
-            <button data-key="/" class="key-btn">/</button>
-            <button data-key="-" class="key-btn">-</button>
-            <button data-key="_" class="key-btn">_</button>
-            <button data-key="$" class="key-btn">$</button>
-            <button id="pasteBtn" class="key-btn tool-btn">粘贴</button>
-            <button data-fontsize="small" class="key-btn tool-btn font-btn">小</button>
-            <button data-fontsize="medium" class="key-btn tool-btn font-btn">中</button>
-            <button data-fontsize="large" class="key-btn tool-btn font-btn">大</button>
-        </div>
+        <button data-key="Escape" class="key-btn">Esc</button>
+        <button data-key="Tab" class="key-btn">Tab</button>
+        <button data-key="Ctrl" class="key-btn mod-key">Ctrl</button>
+        <button data-key="ArrowUp" class="key-btn">↑</button>
+        <button data-key="ArrowDown" class="key-btn">↓</button>
+        <button data-key="ArrowLeft" class="key-btn">←</button>
+        <button data-key="ArrowRight" class="key-btn">→</button>
+        <button data-key="|" class="key-btn">|</button>
+        <button data-key="~" class="key-btn">~</button>
+        <button data-key="/" class="key-btn">/</button>
+        <button data-key="-" class="key-btn">-</button>
+        <button data-key="_" class="key-btn">_</button>
+        <button data-key="$" class="key-btn">$</button>
+        <button id="pasteBtn" class="key-btn tool-btn">粘贴</button>
     </div>
 
     <div id="menuOverlay" class="menu-overlay hidden">
@@ -59,6 +52,13 @@
             <div class="menu-divider"></div>
             <button id="newTermBtn" class="menu-item">新建终端</button>
             <button id="closeTermBtn" class="menu-item danger">关闭终端</button>
+            <div class="menu-divider"></div>
+            <div class="menu-section-title">字体大小</div>
+            <div class="theme-row">
+                <button data-fontsize="small" class="theme-btn font-btn">小</button>
+                <button data-fontsize="medium" class="theme-btn font-btn">中</button>
+                <button data-fontsize="large" class="theme-btn font-btn">大</button>
+            </div>
             <div class="menu-divider"></div>
             <div class="menu-section-title">主题</div>
             <div class="theme-row">

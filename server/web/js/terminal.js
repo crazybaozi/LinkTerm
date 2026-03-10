@@ -478,15 +478,6 @@
             });
         }
 
-        var fontBtns = document.querySelectorAll('.font-btn');
-        for (var i = 0; i < fontBtns.length; i++) {
-            fontBtns[i].addEventListener('click', function(e) {
-                e.preventDefault();
-                var preset = this.getAttribute('data-fontsize');
-                applyFontPreset(preset);
-            });
-        }
-        updateFontBtnState();
     }
 
     function applyFontPreset(preset) {
@@ -585,7 +576,17 @@
                 if (ws) ws.close();
             }
         });
-        var themeBtns = document.querySelectorAll('.theme-btn');
+        var fontBtns = document.querySelectorAll('.font-btn');
+        for (var i = 0; i < fontBtns.length; i++) {
+            fontBtns[i].addEventListener('click', function(e) {
+                e.preventDefault();
+                var preset = this.getAttribute('data-fontsize');
+                applyFontPreset(preset);
+            });
+        }
+        updateFontBtnState();
+
+        var themeBtns = document.querySelectorAll('.theme-btn:not(.font-btn)');
         for (var i = 0; i < themeBtns.length; i++) {
             var tb = themeBtns[i];
             if (tb.getAttribute('data-theme') === currentTheme) {
@@ -598,7 +599,7 @@
                 currentTheme = name;
                 localStorage.setItem('linkterm_theme', name);
                 term.options.theme = themes[name] || themes.dark;
-                document.querySelectorAll('.theme-btn').forEach(function(b) { b.classList.remove('active'); });
+                document.querySelectorAll('.theme-btn:not(.font-btn)').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
 
                 var bg = (themes[name] || themes.dark).background;
