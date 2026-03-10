@@ -50,7 +50,14 @@ func (s *Server) registerRoutes() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s.mux.Handle("/", http.FileServer(http.FS(webRoot)))
+	fileServer := http.FileServer(http.FS(webRoot))
+	s.mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/sw.js" {
+			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+			w.Header().Set("Service-Worker-Allowed", "/")
+		}
+		fileServer.ServeHTTP(w, r)
+	}))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -1,4 +1,4 @@
-var CACHE_NAME = 'linkterm-v1';
+var CACHE_NAME = 'linkterm-v2';
 var SHELL_FILES = [
     '/',
     '/terminal.html',
@@ -35,8 +35,16 @@ self.addEventListener('fetch', function(e) {
         return;
     }
     e.respondWith(
-        caches.match(e.request).then(function(cached) {
-            return cached || fetch(e.request);
+        fetch(e.request).then(function(resp) {
+            if (resp && resp.status === 200) {
+                var clone = resp.clone();
+                caches.open(CACHE_NAME).then(function(cache) {
+                    cache.put(e.request, clone);
+                });
+            }
+            return resp;
+        }).catch(function() {
+            return caches.match(e.request);
         })
     );
 });
