@@ -599,6 +599,9 @@
             case 'Escape':
                 sendInput('\x1b');
                 break;
+            case 'Backspace':
+                sendInput('\x7f');
+                break;
             case 'Ctrl':
                 ctrlActive = !ctrlActive;
                 updateCtrlBtn();

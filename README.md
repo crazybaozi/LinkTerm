@@ -13,7 +13,7 @@
 ```bash
 git clone https://github.com/crazybaozi/LinkTerm.git
 cd LinkTerm
-docker compose up -d
+docker compose build && docker compose up -d
 ```
 
 ### 2. 安装 Mac Agent
