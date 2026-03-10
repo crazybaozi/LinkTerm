@@ -190,8 +190,10 @@
         });
     }
 
+    var skipInitialResize = false;
+
     function createSession(agId) {
-        setStatus('connecting', '正在创建终端...');
+        setStatus('connecting', '正在创建...');
         fetch('/api/sessions', {
             method: 'POST',
             headers: {
@@ -212,6 +214,7 @@
             if (!data) return;
             sessionId = data.session_id;
             localStorage.setItem('linkterm_session_id', sessionId);
+            skipInitialResize = true;
             connectWebSocket();
         })
         .catch(function(err) {
@@ -272,7 +275,11 @@
             setStatus('connected', '已连接');
             hideReconnectBar();
             reconnecting = false;
-            sendResize();
+            if (skipInitialResize) {
+                skipInitialResize = false;
+            } else {
+                sendResize();
+            }
             startPing();
             term.focus();
         };
@@ -583,28 +590,31 @@
             closeWebSocket();
             sessionId = null;
             localStorage.removeItem('linkterm_session_id');
-            term.clear();
-            term.write('\x1b[2J\x1b[H');
-            setStatus('connecting', '正在创建新终端...');
-            fetch('/api/agents', {
-                headers: { 'Authorization': 'Bearer ' + jwtToken }
-            })
-            .then(function(resp) {
-                if (resp.status === 401) { redirectToLogin(); return; }
-                return resp.json();
-            })
-            .then(function(agents) {
-                if (!agents || agents.length === 0) {
-                    setStatus('disconnected', 'Mac 离线');
-                    showReconnectBar('请确认 Agent 已启动并连接到服务端', true);
-                    return;
-                }
-                agentId = agents[0].id;
+            term.reset();
+            setStatus('connecting', '正在创建...');
+            if (!agentId) {
+                fetch('/api/agents', {
+                    headers: { 'Authorization': 'Bearer ' + jwtToken }
+                })
+                .then(function(resp) {
+                    if (resp.status === 401) { redirectToLogin(); return; }
+                    return resp.json();
+                })
+                .then(function(agents) {
+                    if (!agents || agents.length === 0) {
+                        setStatus('disconnected', 'Mac 离线');
+                        showReconnectBar('请确认 Agent 已启动并连接到服务端', true);
+                        return;
+                    }
+                    agentId = agents[0].id;
+                    createSession(agentId);
+                })
+                .catch(function(err) {
+                    setStatus('disconnected', '创建失败: ' + err.message);
+                });
+            } else {
                 createSession(agentId);
-            })
-            .catch(function(err) {
-                setStatus('disconnected', '创建失败: ' + err.message);
-            });
+            }
         });
         document.getElementById('closeTermBtn').addEventListener('click', function() {
             if (confirm('确认关闭终端？正在运行的进程将被终止。')) {
