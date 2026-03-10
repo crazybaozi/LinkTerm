@@ -16,7 +16,7 @@
     var reconnecting = false;
     var reconnectTimer = null;
     var reconnectAttempts = 0;
-    var maxReconnectAttempts = 20;
+    var maxReconnectAttempts = 3;
 
     var statusBar = document.getElementById('statusBar');
     var statusIcon = document.getElementById('statusIcon');
@@ -103,30 +103,15 @@
         setupVisibility();
     }
 
-    /** connectToSession 优先恢复已有会话，否则创建新会话 */
+    /** connectToSession 先验证 JWT，再恢复或创建会话 */
     function connectToSession() {
-        if (sessionId) {
-            setStatus('connecting', '恢复已有会话...');
-            connectWebSocket(function onFail() {
-                sessionId = null;
-                localStorage.removeItem('linkterm_session_id');
-                fetchAgentAndConnect();
-            });
-            return;
-        }
-        fetchAgentAndConnect();
-    }
-
-    function fetchAgentAndConnect() {
-        setStatus('connecting', '正在获取终端...');
+        setStatus('connecting', '正在验证...');
         fetch('/api/agents', {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
         })
         .then(function(resp) {
             if (resp.status === 401) {
-                localStorage.removeItem('linkterm_token');
-                localStorage.removeItem('linkterm_session_id');
-                window.location.href = '/';
+                redirectToLogin();
                 return;
             }
             return resp.json();
@@ -137,7 +122,17 @@
                 return;
             }
             agentId = agents[0].id;
-            return findOrCreateSession(agentId);
+
+            if (sessionId) {
+                setStatus('connecting', '恢复已有会话...');
+                connectWebSocket(function onFail() {
+                    sessionId = null;
+                    localStorage.removeItem('linkterm_session_id');
+                    findOrCreateSession(agentId);
+                });
+            } else {
+                findOrCreateSession(agentId);
+            }
         })
         .catch(function(err) {
             setStatus('disconnected', '连接失败: ' + err.message);
@@ -168,7 +163,11 @@
                 sessionId = reusable.id;
                 localStorage.setItem('linkterm_session_id', sessionId);
                 setStatus('connecting', '恢复已有会话...');
-                connectWebSocket();
+                connectWebSocket(function onFail() {
+                    sessionId = null;
+                    localStorage.removeItem('linkterm_session_id');
+                    createSession(agId);
+                });
             } else {
                 createSession(agId);
             }
@@ -326,34 +325,40 @@
         if (reconnecting || !sessionId) return;
         reconnecting = true;
 
-        var delays = [500, 1000, 2000, 5000, 10000, 15000, 20000, 30000];
+        var delays = [1000, 2000, 5000];
         var delay = delays[Math.min(reconnectAttempts, delays.length - 1)];
 
-        setStatus('connecting', '重连中 (' + (reconnectAttempts + 1) + ')...');
+        setStatus('connecting', '重连中 (' + (reconnectAttempts + 1) + '/' + maxReconnectAttempts + ')...');
         reconnectOverlay.classList.remove('hidden');
 
         reconnectTimer = setTimeout(function() {
             reconnectAttempts++;
-            if (reconnectAttempts > maxReconnectAttempts) {
-                reconnecting = false;
-                fetch('/api/agents', {
-                    headers: { 'Authorization': 'Bearer ' + jwtToken }
-                }).then(function(resp) {
-                    if (resp.status === 401) {
-                        redirectToLogin();
-                    } else {
-                        setStatus('disconnected', '重连失败，请刷新页面');
-                    }
-                }).catch(function() {
-                    setStatus('disconnected', '网络异常，请检查网络后刷新');
-                });
-                return;
-            }
             reconnecting = false;
-            connectWebSocket(function() {
-                sessionId = null;
-                localStorage.removeItem('linkterm_session_id');
-                fetchAgentAndConnect();
+
+            fetch('/api/agents', {
+                headers: { 'Authorization': 'Bearer ' + jwtToken }
+            }).then(function(resp) {
+                if (resp.status === 401) {
+                    redirectToLogin();
+                    return;
+                }
+                if (reconnectAttempts > maxReconnectAttempts) {
+                    setStatus('disconnected', '重连失败，请刷新页面');
+                    reconnectOverlay.classList.add('hidden');
+                    return;
+                }
+                connectWebSocket(function() {
+                    sessionId = null;
+                    localStorage.removeItem('linkterm_session_id');
+                    connectToSession();
+                });
+            }).catch(function() {
+                if (reconnectAttempts > maxReconnectAttempts) {
+                    setStatus('disconnected', '网络异常，请检查网络后刷新');
+                    reconnectOverlay.classList.add('hidden');
+                } else {
+                    scheduleReconnect();
+                }
             });
         }, delay);
     }
