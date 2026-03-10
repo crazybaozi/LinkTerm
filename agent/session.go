@@ -28,6 +28,9 @@ type Session struct {
 func NewSession(id string, cols, rows uint16, shell string, tunnel *Tunnel, bufferSize int) (*Session, error) {
 	cmd := exec.Command(shell)
 	cmd.Env = os.Environ()
+	if home, err := os.UserHomeDir(); err == nil {
+		cmd.Dir = home
+	}
 
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{
 		Cols: cols,
