@@ -284,6 +284,33 @@ html, body {
     color: var(--danger);
 }
 
+.menu-bottom-row {
+    display: flex;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.menu-bottom-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: 15px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.menu-bottom-btn:active {
+    background: var(--bg-surface);
+}
+
+.menu-bottom-btn.danger {
+    color: var(--danger);
+    border-color: rgba(247, 118, 142, 0.3);
+}
+
 .menu-divider {
     height: 1px;
     background: var(--border);
@@ -300,7 +327,8 @@ html, body {
 }
 
 .session-list {
-    max-height: 200px;
+    min-height: 200px;
+    max-height: 260px;
     overflow-y: auto;
 }
 

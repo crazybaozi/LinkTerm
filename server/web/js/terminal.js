@@ -17,6 +17,7 @@
     var reconnectTimer = null;
     var reconnectAttempts = 0;
     var maxReconnectAttempts = 3;
+    var bufferReplaying = false;
 
     var statusBar = document.getElementById('statusBar');
     var statusIcon = document.getElementById('statusIcon');
@@ -256,6 +257,14 @@
         ws.onmessage = function(e) {
             if (e.data instanceof ArrayBuffer) {
                 term.write(new Uint8Array(e.data));
+                if (bufferReplaying) {
+                    bufferReplaying = false;
+                    setTimeout(function() {
+                        term.write('\x1b[2J\x1b[H');
+                        sendResize();
+                        setStatus('connected', '已连接');
+                    }, 50);
+                }
             } else {
                 var msg = JSON.parse(e.data);
                 handleControlMessage(msg);
@@ -283,7 +292,8 @@
     function handleControlMessage(msg) {
         switch (msg.type) {
             case 'buffered':
-                setStatus('connecting', '恢复中，回放 ' + formatBytes(msg.size) + ' 数据...');
+                setStatus('connecting', '恢复中...');
+                bufferReplaying = true;
                 break;
             case 'closed':
                 setStatus('disconnected', '终端已结束 (exit ' + msg.exit_code + ')');
@@ -556,10 +566,31 @@
         });
         document.getElementById('newTermBtn').addEventListener('click', function() {
             menuOverlay.classList.add('hidden');
+            if (ws) { ws.close(); ws = null; }
             sessionId = null;
             localStorage.removeItem('linkterm_session_id');
             term.clear();
-            connectToSession();
+            term.write('\x1b[2J\x1b[H');
+            setStatus('connecting', '正在创建新终端...');
+            fetch('/api/agents', {
+                headers: { 'Authorization': 'Bearer ' + jwtToken }
+            })
+            .then(function(resp) {
+                if (resp.status === 401) { redirectToLogin(); return; }
+                return resp.json();
+            })
+            .then(function(agents) {
+                if (!agents || agents.length === 0) {
+                    setStatus('disconnected', 'Mac 离线');
+                    showReconnectBar('请确认 Agent 已启动并连接到服务端', true);
+                    return;
+                }
+                agentId = agents[0].id;
+                createSession(agentId);
+            })
+            .catch(function(err) {
+                setStatus('disconnected', '创建失败: ' + err.message);
+            });
         });
         document.getElementById('closeTermBtn').addEventListener('click', function() {
             if (confirm('确认关闭终端？正在运行的进程将被终止。')) {
@@ -585,27 +616,6 @@
             });
         }
         updateFontBtnState();
-
-        var themeBtns = document.querySelectorAll('.theme-btn:not(.font-btn)');
-        for (var i = 0; i < themeBtns.length; i++) {
-            var tb = themeBtns[i];
-            if (tb.getAttribute('data-theme') === currentTheme) {
-                tb.classList.add('active');
-            } else {
-                tb.classList.remove('active');
-            }
-            tb.addEventListener('click', function() {
-                var name = this.getAttribute('data-theme');
-                currentTheme = name;
-                localStorage.setItem('linkterm_theme', name);
-                term.options.theme = themes[name] || themes.dark;
-                document.querySelectorAll('.theme-btn:not(.font-btn)').forEach(function(b) { b.classList.remove('active'); });
-                this.classList.add('active');
-
-                var bg = (themes[name] || themes.dark).background;
-                document.body.style.backgroundColor = bg;
-            });
-        }
 
         document.getElementById('logoutBtn').addEventListener('click', function() {
             localStorage.removeItem('linkterm_token');
