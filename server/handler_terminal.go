@@ -44,6 +44,12 @@ func (s *Server) handleTerminalWS(w http.ResponseWriter, r *http.Request) {
 
 	conn.SetReadLimit(1 << 16) // 64KB
 
+	old := session.SetBrowserConn(conn)
+	if old != nil {
+		old.Close(websocket.StatusNormalClosure, "replaced")
+	}
+	defer session.OnBrowserDisconnect(conn)
+
 	buffered := session.Buffer.ReadAll()
 	if len(buffered) > 0 {
 		sizeMsg := []byte(`{"type":"buffered","size":` + itoa(len(buffered)) + `}`)
@@ -51,9 +57,6 @@ func (s *Server) handleTerminalWS(w http.ResponseWriter, r *http.Request) {
 		conn.Write(r.Context(), websocket.MessageBinary, buffered)
 		log.Printf("[terminal-ws] session %s replayed %d bytes buffer", sessionID, len(buffered))
 	}
-
-	session.SetBrowserConn(conn)
-	defer session.OnBrowserDisconnect()
 
 	log.Printf("[terminal-ws] browser connected to session %s", sessionID)
 

@@ -61,6 +61,7 @@
     var connectSeq = 0;
 
     initTerminal();
+    connectSeq++;
     connectToSession();
 
     function initTerminal() {
@@ -120,7 +121,7 @@
 
     /** connectToSession 先验证 JWT，再恢复或创建会话 */
     function connectToSession() {
-        var seq = ++connectSeq;
+        var seq = connectSeq;
         setStatus('connecting', '正在验证...');
         fetch('/api/agents', {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
@@ -203,6 +204,7 @@
     var skipInitialResize = false;
 
     function createSession(agId) {
+        var seq = connectSeq;
         setStatus('connecting', '正在创建...');
         fetch('/api/sessions', {
             method: 'POST',
@@ -217,10 +219,12 @@
             })
         })
         .then(function(resp) {
+            if (seq !== connectSeq) return;
             if (resp.status === 401) { redirectToLogin(); return; }
             return resp.json();
         })
         .then(function(data) {
+            if (seq !== connectSeq) return;
             if (!data) return;
             sessionId = data.session_id;
             localStorage.setItem('linkterm_session_id', sessionId);
@@ -228,6 +232,7 @@
             connectWebSocket();
         })
         .catch(function(err) {
+            if (seq !== connectSeq) return;
             setStatus('disconnected', '创建终端失败: ' + err.message);
         });
     }
@@ -493,6 +498,7 @@
 
     function setupReconnectActions() {
         document.getElementById('retryBtn').addEventListener('click', function() {
+            connectSeq++;
             cancelReconnect();
             reconnectAttempts = 0;
             reconnecting = false;
@@ -620,14 +626,17 @@
             term.reset();
             setStatus('connecting', '正在创建...');
             if (!agentId) {
+                var seq = connectSeq;
                 fetch('/api/agents', {
                     headers: { 'Authorization': 'Bearer ' + jwtToken }
                 })
                 .then(function(resp) {
+                    if (seq !== connectSeq) return;
                     if (resp.status === 401) { redirectToLogin(); return; }
                     return resp.json();
                 })
                 .then(function(agents) {
+                    if (seq !== connectSeq) return;
                     if (!agents || agents.length === 0) {
                         setStatus('disconnected', 'Mac 离线');
                         showReconnectBar('请确认 Agent 已启动并连接到服务端', true);
@@ -637,6 +646,7 @@
                     createSession(agentId);
                 })
                 .catch(function(err) {
+                    if (seq !== connectSeq) return;
                     setStatus('disconnected', '创建失败: ' + err.message);
                 });
             } else {

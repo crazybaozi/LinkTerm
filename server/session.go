@@ -31,21 +31,26 @@ type TerminalSession struct {
 	mu         sync.Mutex
 }
 
-/** SetBrowserConn 设置浏览器端 WebSocket 连接 */
-func (s *TerminalSession) SetBrowserConn(conn *websocket.Conn) {
+/** SetBrowserConn 设置浏览器端 WebSocket 连接，返回被替换的旧连接 */
+func (s *TerminalSession) SetBrowserConn(conn *websocket.Conn) *websocket.Conn {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	old := s.BrowserWS
 	s.BrowserWS = conn
 	if conn != nil {
 		s.Status = StatusActive
 		s.DetachedAt = time.Time{}
 	}
+	return old
 }
 
-/** OnBrowserDisconnect 浏览器断开时调用 */
-func (s *TerminalSession) OnBrowserDisconnect() {
+/** OnBrowserDisconnect 浏览器断开时调用，仅当 conn 仍是当前连接时才清除 */
+func (s *TerminalSession) OnBrowserDisconnect(conn *websocket.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.BrowserWS != conn {
+		return
+	}
 	s.BrowserWS = nil
 	if s.Status == StatusActive {
 		s.Status = StatusDetached
