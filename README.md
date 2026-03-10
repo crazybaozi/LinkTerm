@@ -6,6 +6,23 @@
 手机/iPad (浏览器)  ──HTTPS/WSS──>  服务端 (云服务器)  <──WSS──  Mac Agent
 ```
 
+## 快速测试
+
+无需部署服务端，使用公共测试服务器，一行命令体验：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash -s -- --server ws://linkterm1.lbai.ai:8080
+```
+
+安装完成后：
+1. 菜单栏出现 **L⚡** 图标，点击复制 Token
+2. 手机浏览器打开 `http://linkterm1.lbai.ai:8080`
+3. 输入 Token，即可远程操作 Mac 终端
+
+> 测试服务器仅供体验，正式使用请自行部署。
+
+---
+
 ## 快速开始
 
 ### 1. 部署服务端
@@ -16,7 +33,7 @@ cd LinkTerm
 docker compose build && docker compose up -d
 ```
 
-### 2. 安装 Mac Agent
+### 2. 在 Mac 电脑上安装 Agent
 
 **一键远程安装（推荐，无需 clone 项目）：**
 
