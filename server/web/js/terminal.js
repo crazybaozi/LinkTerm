@@ -59,9 +59,9 @@
 
     var lastDisconnectReason = '';
     var connectSeq = 0;
+    var lastUserAction = 0;
 
     initTerminal();
-    connectSeq++;
     connectToSession();
 
     function initTerminal() {
@@ -121,7 +121,7 @@
 
     /** connectToSession 先验证 JWT，再恢复或创建会话 */
     function connectToSession() {
-        var seq = connectSeq;
+        var seq = ++connectSeq;
         setStatus('connecting', '正在验证...');
         fetch('/api/agents', {
             headers: { 'Authorization': 'Bearer ' + jwtToken }
@@ -463,6 +463,8 @@
             if (document.visibilityState === 'hidden') {
                 lastHiddenTime = Date.now();
             } else {
+                if (Date.now() - lastUserAction < 10000) return;
+
                 var elapsed = Date.now() - lastHiddenTime;
                 if (!ws || ws.readyState !== WebSocket.OPEN) {
                     cancelReconnect();
@@ -474,9 +476,8 @@
                     try {
                         ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
                     } catch (e) {}
-                    var seqBeforePing = connectSeq;
                     setTimeout(function() {
-                        if (seqBeforePing !== connectSeq) return;
+                        if (Date.now() - lastUserAction < 10000) return;
                         if (!ws || ws.readyState !== WebSocket.OPEN) {
                             cancelReconnect();
                             reconnectAttempts = 0;
@@ -498,6 +499,7 @@
 
     function setupReconnectActions() {
         document.getElementById('retryBtn').addEventListener('click', function() {
+            lastUserAction = Date.now();
             connectSeq++;
             cancelReconnect();
             reconnectAttempts = 0;
@@ -618,6 +620,7 @@
         });
         document.getElementById('newTermBtn').addEventListener('click', function() {
             menuOverlay.classList.add('hidden');
+            lastUserAction = Date.now();
             connectSeq++;
             cancelReconnect();
             closeWebSocket();
@@ -656,6 +659,7 @@
         document.getElementById('closeTermBtn').addEventListener('click', function() {
             if (confirm('确认关闭终端？正在运行的进程将被终止。')) {
                 menuOverlay.classList.add('hidden');
+                lastUserAction = Date.now();
                 connectSeq++;
                 cancelReconnect();
                 if (sessionId) {
@@ -729,6 +733,7 @@
                     return function() {
                         menuOverlay.classList.add('hidden');
                         if (sid !== sessionId) {
+                            lastUserAction = Date.now();
                             connectSeq++;
                             cancelReconnect();
                             closeWebSocket();
