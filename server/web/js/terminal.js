@@ -49,6 +49,16 @@
     };
     var currentTheme = localStorage.getItem('linkterm_theme') || 'dark';
 
+    var fontPresets = {
+        small:  { size: 13, line: 1.25 },
+        medium: { size: 16, line: 1.2 },
+        large:  { size: 19, line: 1.2 }
+    };
+    var currentFontPreset = localStorage.getItem('linkterm_fontpreset') || 'medium';
+    if (!fontPresets[currentFontPreset]) currentFontPreset = 'medium';
+
+    var lastDisconnectReason = '';
+
     initTerminal();
     connectToSession();
 
@@ -232,12 +242,17 @@
 
     function closeWebSocket() {
         if (ws) {
-            ws.onopen = null;
-            ws.onmessage = null;
-            ws.onclose = null;
-            ws.onerror = null;
-            ws.close();
+            var old = ws;
             ws = null;
+            old.onopen = null;
+            old.onmessage = null;
+            old.onclose = null;
+            old.onerror = null;
+            try {
+                if (old.readyState === WebSocket.OPEN || old.readyState === WebSocket.CONNECTING) {
+                    old.close();
+                }
+            } catch (e) {}
         }
         stopPing();
     }
@@ -257,13 +272,13 @@
             setStatus('connected', '已连接');
             hideReconnectBar();
             reconnecting = false;
-            reconnectAttempts = 0;
             sendResize();
             startPing();
             term.focus();
         };
 
         ws.onmessage = function(e) {
+            reconnectAttempts = 0;
             if (e.data instanceof ArrayBuffer) {
                 term.write(new Uint8Array(e.data));
                 if (bufferReplaying) {
@@ -286,7 +301,7 @@
                 onFail();
                 return;
             }
-            if (!reconnecting) {
+            if (!reconnecting && sessionId) {
                 lastDisconnectReason = formatCloseReason(e.code, e.reason);
                 setStatus('disconnected', '连接已断开');
                 scheduleReconnect();
@@ -364,8 +379,6 @@
 
     /* ========== Reconnect ========== */
 
-    var lastDisconnectReason = '';
-
     function scheduleReconnect() {
         if (reconnecting || !sessionId) return;
         reconnecting = true;
@@ -396,7 +409,8 @@
                 connectWebSocket(function() {
                     sessionId = null;
                     localStorage.removeItem('linkterm_session_id');
-                    connectToSession();
+                    setStatus('disconnected', '会话已失效');
+                    showReconnectBar('会话不存在，请重试或创建新终端', true);
                 });
             }).catch(function() {
                 if (reconnectAttempts > maxReconnectAttempts) {
@@ -462,15 +476,6 @@
     }
 
     /* ========== Toolbar ========== */
-
-    var fontPresets = {
-        small:  { size: 13, line: 1.25 },
-        medium: { size: 16, line: 1.2 },
-        large:  { size: 19, line: 1.2 }
-    };
-    var currentFontPreset = localStorage.getItem('linkterm_fontpreset') || 'medium';
-    if (!fontPresets[currentFontPreset]) currentFontPreset = 'medium';
-    var fontSize = fontPresets[currentFontPreset].size;
 
     function setupToolbar() {
         var buttons = document.querySelectorAll('.key-btn[data-key]');
