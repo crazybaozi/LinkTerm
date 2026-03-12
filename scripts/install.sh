@@ -158,34 +158,39 @@ detect_system() {
 install_binary() {
     mkdir -p "$INSTALL_DIR"
 
-    # 优先级: --local 参数 > 项目 bin 目录 > GitHub Releases > 本地编译 > clone 编译
+    # 优先级: --local 参数 > 本地编译 > 项目 bin 目录 > GitHub Releases > clone 编译
     if [ -n "$LOCAL_BIN" ]; then
         install_from_local "$LOCAL_BIN"
+        codesign_binary
         return
     fi
 
-    # 检查项目 bin 目录（开发者本地安装场景）
+    # 优先本地编译（源码版本最新，包含 share 等新功能）
+    if build_locally; then
+        codesign_binary
+        return
+    fi
+
+    # 检查项目 bin 目录（本地编译不可用时的回退）
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     local project_bin="${script_dir}/../bin/${BIN_NAME}"
     if [ -f "$project_bin" ]; then
         info "检测到项目编译产物"
         install_from_local "$project_bin"
+        codesign_binary
         return
     fi
 
     # 从 GitHub Releases 下载
     if download_from_github; then
-        return
-    fi
-
-    # 尝试本地编译（适用于已 clone 项目的场景）
-    if build_locally; then
+        codesign_binary
         return
     fi
 
     # 临时 clone 仓库并编译（适用于 curl|bash 远程安装场景）
     if clone_and_build; then
+        codesign_binary
         return
     fi
 
@@ -204,6 +209,14 @@ install_binary() {
     echo -e "    ${DIM}cd /tmp/LinkTerm/agent && go build -o ${BIN_PATH} .${NC}"
     echo -e "    ${DIM}curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/install.sh | bash -s -- --local ${BIN_PATH}${NC}"
     exit 1
+}
+
+codesign_binary() {
+    if command -v codesign &>/dev/null; then
+        codesign --sign - --force "$BIN_PATH" 2>/dev/null && \
+            ok "已完成 ad-hoc 代码签名" || \
+            warn "代码签名失败（非 macOS 环境可忽略）"
+    fi
 }
 
 install_from_local() {
@@ -355,6 +368,64 @@ YAML
 }
 
 # ============================================================
+#  PATH configuration (make linkterm-agent available globally)
+# ============================================================
+setup_path() {
+    # 如果 linkterm-agent 已在 PATH 中可找到，跳过
+    if command -v "$BIN_NAME" &>/dev/null; then
+        local existing
+        existing="$(command -v "$BIN_NAME")"
+        if [ "$existing" = "$BIN_PATH" ] || [ "$(readlink -f "$existing" 2>/dev/null)" = "$BIN_PATH" ]; then
+            ok "${BIN_NAME} 已在 PATH 中"
+            return
+        fi
+    fi
+
+    # 检查 INSTALL_DIR 是否已在 PATH 中
+    case ":$PATH:" in
+        *":${INSTALL_DIR}:"*)
+            ok "${INSTALL_DIR} 已在 PATH 中"
+            return
+            ;;
+    esac
+
+    local shell_name profile_file
+    shell_name="$(basename "${SHELL:-/bin/zsh}")"
+
+    case "$shell_name" in
+        zsh)  profile_file="$HOME/.zshrc" ;;
+        bash)
+            if [ -f "$HOME/.bash_profile" ]; then
+                profile_file="$HOME/.bash_profile"
+            else
+                profile_file="$HOME/.bashrc"
+            fi
+            ;;
+        fish) profile_file="$HOME/.config/fish/config.fish" ;;
+        *)    profile_file="$HOME/.profile" ;;
+    esac
+
+    local path_line="export PATH=\"${INSTALL_DIR}:\$PATH\""
+    if [ "$shell_name" = "fish" ]; then
+        path_line="fish_add_path ${INSTALL_DIR}"
+    fi
+
+    # 检查是否已写入过
+    if [ -f "$profile_file" ] && grep -qF "$INSTALL_DIR" "$profile_file" 2>/dev/null; then
+        ok "PATH 已配置在 ${DIM}${profile_file}${NC}"
+        return
+    fi
+
+    echo "" >> "$profile_file"
+    echo "# LinkTerm Agent" >> "$profile_file"
+    echo "$path_line" >> "$profile_file"
+
+    ok "已将 ${DIM}${INSTALL_DIR}${NC} 加入 PATH (${DIM}${profile_file}${NC})"
+    PATH="${INSTALL_DIR}:$PATH"
+    NEED_SOURCE_HINT=true
+}
+
+# ============================================================
 #  LaunchAgent (auto-start on login)
 # ============================================================
 setup_launchagent() {
@@ -470,7 +541,32 @@ print_result() {
 
     echo -e "${GREEN}║${NC}  卸载      ${DIM}curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/install.sh | bash -s -- --uninstall${NC}"
     echo -e "${GREEN}║${NC}                                              ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC}  ${BOLD}终端共享${NC}                                      ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC}                                              ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC}  共享终端  ${DIM}linkterm-agent share${NC}"
+    echo -e "${GREEN}║${NC}  共享命令  ${DIM}linkterm-agent share -- claude${NC}"
+    echo -e "${GREEN}║${NC}                                              ${GREEN}║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+
+    if [ "$NEED_SOURCE_HINT" = true ]; then
+        echo ""
+        echo -e "  ${YELLOW}提示:${NC} 请打开一个新的终端窗口，或执行以下命令使 PATH 生效："
+        local shell_name
+        shell_name="$(basename "${SHELL:-/bin/zsh}")"
+        case "$shell_name" in
+            zsh)  echo -e "    ${DIM}source ~/.zshrc${NC}" ;;
+            bash)
+                if [ -f "$HOME/.bash_profile" ]; then
+                    echo -e "    ${DIM}source ~/.bash_profile${NC}"
+                else
+                    echo -e "    ${DIM}source ~/.bashrc${NC}"
+                fi
+                ;;
+            fish) echo -e "    ${DIM}source ~/.config/fish/config.fish${NC}" ;;
+            *)    echo -e "    ${DIM}source ~/.profile${NC}" ;;
+        esac
+    fi
+
     echo ""
 }
 
@@ -512,6 +608,14 @@ do_uninstall() {
         fi
     fi
 
+    # 清理 PATH 配置
+    for rc_file in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile" "$HOME/.config/fish/config.fish"; do
+        if [ -f "$rc_file" ] && grep -qF "$INSTALL_DIR" "$rc_file" 2>/dev/null; then
+            sed -i '' "/# LinkTerm Agent/d;/$(echo "$INSTALL_DIR" | sed 's|/|\\/|g')/d" "$rc_file"
+            ok "已清理 PATH 配置 (${rc_file})"
+        fi
+    done
+
     echo ""
     echo -e "${GREEN}卸载完成${NC}"
     echo ""
@@ -546,6 +650,7 @@ do_upgrade() {
         exit 1
     fi
     rm -f "$old_bin"
+    codesign_binary
 
     step 3 "重启 Agent..."
     start_agent
@@ -600,7 +705,7 @@ do_status() {
 # ============================================================
 #  Parse arguments
 # ============================================================
-TOTAL_STEPS=4
+TOTAL_STEPS=5
 SERVER_URL=""
 LOCAL_BIN=""
 TOKEN=""
@@ -660,16 +765,21 @@ esac
 
 print_banner
 
+NEED_SOURCE_HINT=false
+
 step 1 "检测系统环境..."
 detect_system
 
 step 2 "安装 Agent..."
 install_binary
 
-step 3 "配置 Agent..."
+step 3 "配置 PATH..."
+setup_path
+
+step 4 "配置 Agent..."
 setup_config
 
-step 4 "设置开机自启..."
+step 5 "设置开机自启..."
 setup_launchagent
 
 echo ""

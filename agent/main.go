@@ -11,6 +11,11 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "share" {
+		runShare(os.Args[2:])
+		return
+	}
+
 	configPath := flag.String("config", "", "config file path")
 	headless := flag.Bool("no-tray", false, "run without menu bar icon (headless mode)")
 	flag.Parse()
@@ -57,6 +62,13 @@ func runHeadless(cfg *Config) {
 	sessions := NewSessionManager(shell, cfg.LocalBufferSize)
 	tunnel := NewTunnel(cfg, sessions)
 
+	ipc := NewIPCServer(IPCSocketPath())
+	ipc.SetTunnel(tunnel)
+	tunnel.ipc = ipc
+	if err := ipc.Start(); err != nil {
+		log.Printf("[ipc] failed to start: %v", err)
+	}
+
 	tunnel.SetStatusCallback(func(status TunnelStatus, msg string) {
 		log.Printf("[status] %s: %s", status, msg)
 	})
@@ -95,6 +107,7 @@ func runHeadless(cfg *Config) {
 	log.Println("shutting down...")
 	selector.Stop()
 	tunnel.Disconnect()
+	ipc.Stop()
 	if guard != nil {
 		guard.Stop()
 	}

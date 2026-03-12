@@ -17,6 +17,7 @@ Claude Code、Kimi K2 等 AI 编程助手运行在终端里，但你不可能一
 - **手机当终端** — 打开浏览器，连上 Mac，运行 `claude` 或任何命令行工具
 - **手机零安装** — 不用下载 App，Safari / Chrome 直接用
 - **会话不丢失** — 锁屏、切应用，回来后一切都还在
+- **共享 Mac 终端** — 在 Terminal.app 中执行 `linkterm-agent share`，手机实时同步查看和操作
 - **一行命令安装** — 几秒钟装好 Mac 端，随时随地开始编程
 
 ## 快速测试
@@ -108,6 +109,24 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.linkterm.agent.plist
 # 查看日志
 tail -f ~/.linkterm/agent.log
 ```
+
+---
+
+## 终端共享
+
+将 Mac 终端共享到手机，适合监控 Claude Code 等长时间运行的任务：
+
+```bash
+# 共享一个新的 shell 会话
+linkterm-agent share
+
+# 共享指定命令
+linkterm-agent share -- claude
+```
+
+在 Terminal.app / iTerm2 中执行后，手机端自动出现该会话。Mac 和手机看到相同输出，双端都可以输入。
+
+> **注意：** 需要在启动任务**之前**执行 `linkterm-agent share`，无法回溯接入已运行的进程。
 
 ---
 

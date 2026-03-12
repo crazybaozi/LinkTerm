@@ -20,6 +20,7 @@ type Tray struct {
 	tunnel     *Tunnel
 	selector   *Selector
 	sessions   *SessionManager
+	ipc        *IPCServer
 	config     *Config
 	configPath string
 	guard      *SleepGuard
@@ -89,6 +90,9 @@ func (t *Tray) OnExit() {
 	if t.tunnel != nil {
 		t.tunnel.Disconnect()
 	}
+	if t.ipc != nil {
+		t.ipc.Stop()
+	}
 	if t.guard != nil {
 		t.guard.Stop()
 	}
@@ -101,6 +105,13 @@ func (t *Tray) startAgent() {
 
 	t.sessions = NewSessionManager(shell, t.config.LocalBufferSize)
 	t.tunnel = NewTunnel(t.config, t.sessions)
+
+	t.ipc = NewIPCServer(IPCSocketPath())
+	t.ipc.SetTunnel(t.tunnel)
+	t.tunnel.ipc = t.ipc
+	if err := t.ipc.Start(); err != nil {
+		log.Printf("[ipc] failed to start: %v", err)
+	}
 
 	t.tunnel.SetStatusCallback(func(status TunnelStatus, msg string) {
 		log.Printf("[status] %s: %s", status, msg)
@@ -176,6 +187,9 @@ func (t *Tray) updateLoop() {
 	for range ticker.C {
 		if t.sessions != nil {
 			count := t.sessions.Count()
+			if t.ipc != nil {
+				count += t.ipc.Count()
+			}
 			t.mSessions.SetTitle(fmt.Sprintf("活跃终端: %d", count))
 		}
 	}

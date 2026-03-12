@@ -46,6 +46,7 @@ type Tunnel struct {
 	connMu         sync.Mutex
 	status         TunnelStatus
 	sessions       *SessionManager
+	ipc            *IPCServer
 	config         *Config
 	onStatus       func(TunnelStatus, string)
 	onReconnect    func()
@@ -114,6 +115,9 @@ func (t *Tunnel) Connect(serverURL, serverName string) error {
 	log.Printf("[tunnel] connected to %s (%s), agent_id=%s", serverName, serverURL, t.agentID)
 
 	t.sessions.ResumeAll(t)
+	if t.ipc != nil {
+		t.ipc.ResumeAll(t)
+	}
 
 	go t.heartbeat(ctx)
 	go t.readLoop(ctx)
@@ -123,10 +127,14 @@ func (t *Tunnel) Connect(serverURL, serverName string) error {
 
 /** authenticate 发送认证消息并等待响应 */
 func (t *Tunnel) authenticate(ctx context.Context, conn *websocket.Conn) error {
+	allSessions := t.sessions.ListInfo()
+	if t.ipc != nil {
+		allSessions = append(allSessions, t.ipc.ListInfo()...)
+	}
 	authMsg := proto.NewMessage(proto.TypeAuth, proto.AuthPayload{
 		Token:    t.token,
 		Name:     t.config.Name,
-		Sessions: t.sessions.ListInfo(),
+		Sessions: allSessions,
 	})
 	data, _ := json.Marshal(authMsg)
 	if err := conn.Write(ctx, websocket.MessageText, data); err != nil {
@@ -214,6 +222,11 @@ func (t *Tunnel) handleMessage(msg proto.Message) {
 		json.Unmarshal(msg.Payload, &p)
 		if s := t.sessions.Get(p.SessionID); s != nil {
 			s.HandleInput(p.Data)
+		} else if t.ipc != nil && t.ipc.HasSession(p.SessionID) {
+			t.ipc.SendToClient(p.SessionID, IPCMessage{
+				Type: IPCShareInput,
+				Data: p.Data,
+			})
 		}
 
 	case proto.TypeSessionResize:
@@ -221,12 +234,22 @@ func (t *Tunnel) handleMessage(msg proto.Message) {
 		json.Unmarshal(msg.Payload, &p)
 		if s := t.sessions.Get(p.SessionID); s != nil {
 			s.Resize(p.Cols, p.Rows)
+		} else if t.ipc != nil && t.ipc.HasSession(p.SessionID) {
+			t.ipc.SendToClient(p.SessionID, IPCMessage{
+				Type: IPCShareResize,
+				Cols: p.Cols,
+				Rows: p.Rows,
+			})
 		}
 
 	case proto.TypeSessionClose:
 		var p proto.SessionClosePayload
 		json.Unmarshal(msg.Payload, &p)
-		t.sessions.Remove(p.SessionID)
+		if t.ipc != nil && t.ipc.HasSession(p.SessionID) {
+			t.ipc.SendToClient(p.SessionID, IPCMessage{Type: IPCShareClosed})
+		} else {
+			t.sessions.Remove(p.SessionID)
+		}
 
 	case proto.TypeSessionResumeOK:
 		var p proto.SessionResumeOKPayload

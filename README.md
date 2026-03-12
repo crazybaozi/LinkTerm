@@ -17,6 +17,7 @@ AI coding assistants like Claude Code and Kimi K2 run in the terminal. But you'r
 - **Phone as terminal** — Open a browser, connect to your Mac, run `claude` or any CLI tool
 - **Zero install on phone** — No app to download, works in Safari / Chrome
 - **Session persistence** — Lock your phone, come back later, everything is still there
+- **Share Mac terminal** — Run `linkterm-agent share` to share an existing terminal session to your phone in real time
 - **One-line setup** — Install the Mac agent in seconds, start coding remotely
 
 ## Quick Test
@@ -108,6 +109,24 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.linkterm.agent.plist
 # View logs
 tail -f ~/.linkterm/agent.log
 ```
+
+---
+
+## Terminal Sharing
+
+Share your Mac terminal to your phone — perfect for monitoring long-running tasks like Claude Code:
+
+```bash
+# Share a new shell session
+linkterm-agent share
+
+# Share a specific command
+linkterm-agent share -- claude
+```
+
+After running this in Terminal.app / iTerm2, the session appears on your phone automatically. Both Mac and phone see the same output, and both can type.
+
+> **Note:** Run `linkterm-agent share` *before* starting the task. It cannot attach to an already-running process.
 
 ---
 
