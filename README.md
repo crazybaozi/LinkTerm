@@ -12,32 +12,105 @@ Phone/iPad (Browser)  ──HTTPS/WSS──>  Server (Cloud)  <──WSS──  
 
 ## Why LinkTerm?
 
-AI coding assistants like Claude Code and Kimi K2 run in the terminal. But you're not always at your desk. LinkTerm bridges the gap:
-
 - **Phone as terminal** — Open a browser, connect to your Mac, run `claude` or any CLI tool
 - **Zero install on phone** — No app to download, works in Safari / Chrome
 - **Session persistence** — Lock your phone, come back later, everything is still there
-- **Share Mac terminal** — Run `linkterm-agent share` to share an existing terminal session to your phone in real time
+- **Share Mac terminal** — Run `linkterm-agent share` to share a terminal session to your phone in real time
 - **One-line setup** — Install the Mac agent in seconds, start coding remotely
 
-## Quick Test
+---
 
-No server deployment needed — try it instantly with the public test server:
+# Part 1: Try It Now
+
+No server deployment needed, no source code to download — try the full experience in one command.
+
+## Install
+
+Run this on your Mac:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash -s -- --server ws://linkterm1.lbai.ai:8080
 ```
 
-After installation:
-1. The **L⚡** icon appears in the menu bar — click to copy your Token
-2. Open `http://linkterm1.lbai.ai:8080` on your phone browser
-3. Enter the Token to start controlling your Mac terminal remotely
+After installation, the **L⚡** icon appears in the menu bar — the Agent is running in the background.
 
-> The test server is for demo purposes only. Deploy your own server for production use.
+## Connect from Your Phone
+
+1. Open **http://linkterm1.lbai.ai:8080** in your phone browser
+2. Click the **L⚡** icon in the Mac menu bar → copy your Token
+3. Enter the Token on the phone page — you're in
+
+> For a native-like experience: iOS Safari Share → Add to Home Screen / Android Chrome → Install App
+
+## Share a Terminal Between Phone and Mac
+
+Run this in Terminal.app / iTerm2 so your phone and Mac share the same terminal — perfect for monitoring long-running tasks like Claude Code:
+
+```bash
+linkterm-agent share
+```
+
+Both Mac and phone see the same output, and both can type. Exit with `exit` or `Ctrl+D`.
+
+Example: share your terminal, then start Claude Code
+
+```
+$ linkterm-agent share
+[LinkTerm] Terminal shared (session: share-1773206147041873000)
+[LinkTerm] Phone can now connect to see this terminal
+
+$ claude
+╭────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!              │
+│   /help for help                       │
+╰────────────────────────────────────────╯
+>
+```
+
+> **Note:** Run `linkterm-agent share` *before* starting the task. It cannot attach to an already-running process.
+
+## Mac Menu Bar
+
+The lightning color indicates connection status: 🟢 Connected / 🔴 Disconnected / 🟡 Connecting.
+
+Click the icon to:
+- **Copy Token** — paste it in the phone browser to log in
+- **Server Address** — click to copy
+- **Reconnect** — manually reconnect
+- **Quit LinkTerm** — stop the Agent
+
+## Agent Management
+
+```bash
+# Check status
+curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash -s -- --status
+
+# Uninstall
+curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash -s -- --uninstall
+
+# Manually stop / start
+launchctl bootout gui/$(id -u)/com.linkterm.agent
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.linkterm.agent.plist
+
+# View logs
+tail -f ~/.linkterm/agent.log
+```
+
+## FAQ
+
+| Issue | Solution |
+|:---|:---|
+| Mac offline | Check if the Agent is running: `pgrep -f linkterm-agent` |
+| Find Token | Click the **L⚡** menu bar icon → "Copy Token" |
+| Token compromised | Remove the `token` field from `~/.linkterm/config.yaml` and restart the Agent; the old Token is revoked immediately |
+| Phone screen locked, terminal stuck | Auto-reconnects in 1–3 seconds; if it fails, there's a "Reconnect" button on the page |
+| Disconnects when lid closed | Make sure `prevent_sleep: true` and the Mac is **plugged in** |
+
+> The test server is for demo purposes only. For production use, deploy your own server below.
 
 ---
 
-## Getting Started
+# Part 2: Self-Hosted Deployment
 
 ### 1. Deploy the Server
 
@@ -47,15 +120,9 @@ cd LinkTerm
 docker compose build && docker compose up -d
 ```
 
-### 2. Install Agent on Your Mac
+### 2. Install Agent
 
-**One-line remote install (recommended, no clone needed):**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash
-```
-
-Skip prompts by specifying the server address:
+**Remote install (no clone needed):**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash -s -- --server wss://your-domain.com
@@ -67,70 +134,7 @@ curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/in
 bash scripts/install.sh
 ```
 
-The script handles everything: detect architecture → download binary → configure server address → generate Token → set up auto-start → launch.
-
-### 3. Access from Your Phone
-
-1. Open `https://your-server-domain` in your phone browser
-2. Enter the Token (click the menu bar icon on your Mac to copy it)
-3. Start using the terminal
-
-> For a native-like experience: iOS Safari Share → Add to Home Screen / Android Chrome → Install App
-
----
-
-## Mac Menu Bar
-
-After launch, the Agent shows an **L⚡** icon in the menu bar. The lightning color indicates status: 🟢 Connected / 🔴 Disconnected / 🟡 Connecting.
-
-Click the icon to:
-- **Copy Token** — paste it in the phone browser to log in
-- **Server Address** — click to copy
-- **Reconnect** — manually reconnect
-- **Quit LinkTerm** — stop the Agent
-
----
-
-## Agent Management
-
-```bash
-# Check status (pick one)
-bash scripts/install.sh --status
-curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash -s -- --status
-
-# Uninstall (pick one)
-bash scripts/install.sh --uninstall
-curl -fsSL https://raw.githubusercontent.com/crazybaozi/LinkTerm/main/scripts/install.sh | bash -s -- --uninstall
-
-# Manually stop / start
-launchctl bootout gui/$(id -u)/com.linkterm.agent
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.linkterm.agent.plist
-
-# View logs
-tail -f ~/.linkterm/agent.log
-```
-
----
-
-## Terminal Sharing
-
-Share your Mac terminal to your phone — perfect for monitoring long-running tasks like Claude Code:
-
-```bash
-# Share a new shell session
-linkterm-agent share
-
-# Share a specific command
-linkterm-agent share -- claude
-```
-
-After running this in Terminal.app / iTerm2, the session appears on your phone automatically. Both Mac and phone see the same output, and both can type.
-
-> **Note:** Run `linkterm-agent share` *before* starting the task. It cannot attach to an already-running process.
-
----
-
-## Configuration
+### 3. Configuration Reference
 
 **Server** `deploy/config.yaml`
 
@@ -151,18 +155,6 @@ token: ""              # leave empty to auto-generate
 prevent_sleep: true    # keep connection alive when lid is closed (on power)
 max_sessions: 10
 ```
-
----
-
-## FAQ
-
-| Issue | Solution |
-|:---|:---|
-| Mac offline | Check if the Agent is running: `pgrep -f linkterm-agent` or `bash scripts/install.sh --status` |
-| Find Token | Click the menu bar icon → "Copy Token" |
-| Token compromised | Remove the `token` field from config.yaml and restart the Agent; the old Token is revoked immediately |
-| Phone screen locked, terminal stuck | Auto-reconnects in 1–3 seconds; if it fails, there's a "Reconnect" button on the page |
-| Disconnects when lid closed | Make sure `prevent_sleep: true` and the Mac is **plugged in** |
 
 ---
 
